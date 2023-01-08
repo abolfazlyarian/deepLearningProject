@@ -23,7 +23,7 @@ class driveDownloader:
     def fileDownloader(self):
         try:
             # gdown.download(self.url, self.outputPath, quiet=False,fuzzy=True)
-            gdown.download(id=self.id ,output=self.outputPath, quiet=False,fuzzy=True)
+            gdown.download(id=self.id ,output=self.outputPath, quiet=False, fuzzy=True, use_cookies=False)
         except:
             raise Exception('file downloading has been failed')
 
