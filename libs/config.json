@@ -1,0 +1,17 @@
+{
+    "train":{
+        "url": "https://drive.google.com/file/d/1-aCWKaD0_aZLMnbbGwNZrz3Zn-YFy8-W/view?usp=share_link",
+        "id" : "1-aCWKaD0_aZLMnbbGwNZrz3Zn-YFy8-W",
+        "oldname" : "train_ende"
+    },
+    "validation":{
+        "url": "https://drive.google.com/file/d/1-ecQKcBm_tfFVu4iK_1RIT1xy3QPowT1/view?usp=share_link",
+        "id" : "1-ecQKcBm_tfFVu4iK_1RIT1xy3QPowT1",
+        "oldname" : "dev"
+    },
+    "test":{
+        "url": "https://drive.google.com/file/d/1-QF5cs9VBHjxzd-L0U9OxRWV7vgm2iN5/view?usp=share_link",
+        "id" : "1-QF5cs9VBHjxzd-L0U9OxRWV7vgm2iN5",
+        "oldname" : "test"
+    }
+}

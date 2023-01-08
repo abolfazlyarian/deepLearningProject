@@ -33,7 +33,7 @@ def read_sentiment_text(root_dir):
     return L
 
 class MSCTD(data.Dataset):
-    def __init__(self,mode, download=True, root_dir="/content",transformer=None, read_mode='scene'):
+    def __init__(self,mode, download=True, root_dir=".",transformer=None, read_mode='scene'):
         """
             mode : Enter type of dataset train , validation , test
             root_dir : Just Enter path of Dataset files 
@@ -42,7 +42,7 @@ class MSCTD(data.Dataset):
             read_mode : scene or signle
         """
         self.transformer = transformer
-        self.read_mode=read_mode
+        self.read_mode = read_mode
         self.root_dir = root_dir
         datasetobj = downloader.driveDownloader(mode=mode,rootDir=root_dir)
         if download:
@@ -59,10 +59,10 @@ class MSCTD(data.Dataset):
             else:
                 raise Exception('datasets are not existed or their names are wrong!')
             
-        self.img_list=read_data_file(root_dir+"/Datasets/"+mode)
-        self.image_index=read_index_file(root_dir+"/Datasets/"+"image_index_"+mode+".txt")
-        self.english_text=read_text_file(root_dir+"/Datasets/"+"english_"+mode+".txt")
-        self.sentiment=read_sentiment_text(root_dir+"/Datasets/"+"sentiment_"+mode+".txt")
+        self.img_list=read_data_file(root_dir + "/MSCTDdatasets/" + mode)
+        self.image_index=read_index_file(root_dir+"/MSCTDdatasets/"+"image_index_"+mode+".txt")
+        self.english_text=read_text_file(root_dir+"/MSCTDdatasets/"+"english_"+mode+".txt")
+        self.sentiment=read_sentiment_text(root_dir+"/MSCTDdatasets/"+"sentiment_"+mode+".txt")
         
     def __getitem__(self, index):
         
