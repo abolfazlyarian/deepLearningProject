@@ -59,10 +59,10 @@ class MSCTD(data.Dataset):
             else:
                 raise Exception('datasets are not existed or their names are wrong!')
             
-        self.img_list=read_data_file(root_dir + "/MSCTDdatasets/" + mode)
-        self.image_index=read_index_file(root_dir+"/MSCTDdatasets/"+"image_index_"+mode+".txt")
-        self.english_text=read_text_file(root_dir+"/MSCTDdatasets/"+"english_"+mode+".txt")
-        self.sentiment=read_sentiment_text(root_dir+"/MSCTDdatasets/"+"sentiment_"+mode+".txt")
+        self.img_list=read_data_file(root_dir + "/Datasets/" + mode)
+        self.image_index=read_index_file(root_dir+"/Datasets/"+"image_index_"+mode+".txt")
+        self.english_text=read_text_file(root_dir+"/Datasets/"+"english_"+mode+".txt")
+        self.sentiment=read_sentiment_text(root_dir+"/Datasets/"+"sentiment_"+mode+".txt")
         
     def __getitem__(self, index):
         

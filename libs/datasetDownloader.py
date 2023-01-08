@@ -10,14 +10,14 @@ class driveDownloader:
         self.root = rootDir
         with open('libs/config.json') as f:
             self.config = json.load(f)
-        if not os.path.isdir(f"{self.root}/MSCTDdatasets"):
-            os.mkdir(f"{self.root}/MSCTDdatasets")
+        if not os.path.isdir(f"{self.root}/Datasets"):
+            os.mkdir(f"{self.root}/Datasets")
         self.id = self.config[mode]["id"]
-        self.outputPath = f"{self.root}/MSCTDdatasets/{self.mode}.zip"
+        self.outputPath = f"{self.root}/Datasets/{self.mode}.zip"
 
-        self.cacheDir = f"{self.root}/MSCTDdatasets/{self.mode}.zip"
+        self.cacheDir = f"{self.root}/Datasets/{self.mode}.zip"
         self.cacheIsExist = os.path.exists(self.cacheDir)
-        self.fileDir = f"{self.root}/MSCTDdatasets/{self.mode}"
+        self.fileDir = f"{self.root}/Datasets/{self.mode}"
         self.fileIsExist = os.path.exists(self.fileDir)
         
     def fileDownloader(self):
@@ -37,7 +37,7 @@ class driveDownloader:
     def unzipFile(self):
         try:
             with ZipFile(self.cacheDir, 'r') as zObject:
-                zObject.extractall(path="MSCTDdatasets/")
+                zObject.extractall(path="Datasets/")
             # dirSrc = f"{self.root}/Datasets/" + os.getenv(f'name{self.mode}')
             # dirDst = f"{self.root}/Datasets/" + f'{self.mode}'
             # os.rename(dirSrc, dirDst)
