@@ -6,22 +6,22 @@
         !cp -r $rootDir .
 
         !pip install --upgrade --no-cache-dir gdown 
+        
+Structure of Code is as follow 
 
-        Structure of Code is as follow 
+        libs    --->
 
-libs    --->
+                DatasetMSCTD.py       ----> Dataset class for loading  and preparing data 
 
-        DatasetMSCTD.py       ----> Dataset class for loading  and preparing data 
-    
-        config.json           ----> saved some constant information for Downloading
-    
-        datasetDownloader.py  ----> datasetDownloader class handles downloading and extraction of zip files
-    
-        transforms.py         ----> transforms include some functions and compose class for adding augmentations and other changes in data
-    
-phase0.ipynb  ----> 
+                config.json           ----> saved some constant information for Downloading
 
-         main code for phase 0 of project is present here
+                datasetDownloader.py  ----> datasetDownloader class handles downloading and extraction of zip files
+
+                transforms.py         ----> transforms include some functions and compose class for adding augmentations and other changes in data
+
+        phase0.ipynb  ----> 
+
+                 main code for phase 0 of project is present here
 
 
 
