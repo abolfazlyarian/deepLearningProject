@@ -79,9 +79,9 @@ class Compose(object):
         self.transforms = transforms
 
     def __call__(self, img):
-
-        for t in self.transforms:
-            img=t(img)
-            
-
-        return img
+        if len(self.transforms) and self.transforms is not None :
+            for t in self.transforms:
+                img=t(img)
+            return img
+        else :
+            return img
