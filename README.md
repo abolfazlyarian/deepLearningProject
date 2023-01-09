@@ -9,10 +9,15 @@ rootDir = '/content/drive/MyDrive/deepLearningProject-main/*'
 
 Structure of Code is as follow 
 libs--->
+
     DatasetMSCTD.py       ----> Dataset class for loading  and preparing data 
+    
     config.json           ----> saved some constant information for Downloading
+    
     datasetDownloader.py  ----> datasetDownloader class handles downloading and extraction of zip files
+    
     transforms.py         ----> transforms include some functions and compose class for adding augmentations and other changes in data
+    
 phase0.ipynb              ----> main code for phase 0 of project is present here
 
 
