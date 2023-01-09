@@ -72,7 +72,7 @@ class MSCTD(data.Dataset):
             sentiment = []
             img_index = self.image_index[index]
             for i in img_index:
-                img.append(self.transformer(np.array((cv2.imread(self.img_list[i])), dtype=np.float32)))
+                img.append(self.transformer(np.array(cv2.imread(self.img_list[i]), dtype=np.float32)))
                 text.append(self.english_text[i])
                 sentiment.append(self.sentiment[i])
             
@@ -84,7 +84,7 @@ class MSCTD(data.Dataset):
             text = []
             sentiment = []
             
-            img.append(self.transformer(np.array(cv2.imread(self.img_list[index])), dtype=np.float32))
+            img.append(self.transformer(np.array(cv2.imread(self.img_list[index]), dtype=np.float32)))
             text.append(self.english_text[index])
             sentiment.append(self.sentiment[index])
             
