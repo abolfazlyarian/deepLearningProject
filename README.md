@@ -1,13 +1,13 @@
-from google.colab import drive
-drive.mount('/content/drive/')
+        from google.colab import drive
+        drive.mount('/content/drive/')
 
-rootDir = '/content/drive/MyDrive/deepLearningProject-main/*'
+        rootDir = '/content/drive/MyDrive/deepLearningProject-main/*'
 
-!cp -r $rootDir .
+        !cp -r $rootDir .
 
-!pip install --upgrade --no-cache-dir gdown 
+        !pip install --upgrade --no-cache-dir gdown 
 
-Structure of Code is as follow 
+        Structure of Code is as follow 
 
 libs    --->
 
@@ -19,7 +19,9 @@ libs    --->
     
         transforms.py         ----> transforms include some functions and compose class for adding augmentations and other changes in data
     
-phase0.ipynb                  ----> main code for phase 0 of project is present here
+phase0.ipynb  ----> 
+
+         main code for phase 0 of project is present here
 
 
 
