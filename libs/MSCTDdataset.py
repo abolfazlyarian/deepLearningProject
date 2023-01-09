@@ -61,7 +61,7 @@ class MSCTD(data.Dataset):
             elif datasetobj.fileIsExist:
                 pass
             else:
-                raise Exception('datasets are not existed or their names are wrong!')
+                raise Exception(f'{root_dir}/Datasets/ and datasets in this directory are not existed or their names are wrong! ')
             
         self.img_list=read_data_file(root_dir + "/Datasets/" + mode)
         self.image_index=read_index_file(root_dir+"/Datasets/"+"image_index_"+mode+".txt")
