@@ -27,31 +27,31 @@ Structure of Code is as follow
 
 Structure of Dataset is as follow
 
-Datasets-->
+        Datasets-->
 
-          ----->train
-          
-          ----->test
-          
-          ----->validation
-          
-          ----->english_train.txt
-          
-          ----->english_test.txt
-          
-          ----->english_validation.txt
-          
-          ----->image_index_train.txt
-          
-          ----->image_index_test.txt
-          
-          ----->image-index-validation.txt
-          
-          ----->sentiment_train.txt
-          
-          ----->sentiment_test.txt
-          
-          ----->sentiment_validation.txt
+                  ----->train
+
+                  ----->test
+
+                  ----->validation
+
+                  ----->english_train.txt
+
+                  ----->english_test.txt
+
+                  ----->english_validation.txt
+
+                  ----->image_index_train.txt
+
+                  ----->image_index_test.txt
+
+                  ----->image-index-validation.txt
+
+                  ----->sentiment_train.txt
+
+                  ----->sentiment_test.txt
+
+                  ----->sentiment_validation.txt
           
 Note
 Our Notebook needs All of the files to be in one directory and the path of Datasets should be set in root_dir as input of the Dataset class.
