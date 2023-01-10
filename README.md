@@ -8,7 +8,7 @@
         !pip install --upgrade --no-cache-dir gdown 
         
 Structure of Code is as follow 
-
+'''
 ├── libs
 │   ├── config.json             ----> saved some constant information for Downloading
 │   ├── datasetDownloader.py    ----> datasetDownloader class handles downloading and extraction of zip files
@@ -21,7 +21,7 @@ Structure of Code is as follow
 ├── test_face_count_dict_mtcnn.pkl
 ├── train_face_count_dict_mtcnn.pkl
 └── validation_face_count_dict_mtcnn.pkl
-        
+ '''       
 
 
 Structure of Dataset is as follow
