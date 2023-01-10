@@ -7,8 +7,24 @@
 
         !pip install --upgrade --no-cache-dir gdown 
         
-Structure of Code is as follow 
+Structure of Project is as follow 
 ```
+deepLearningProject
+├── Datasets
+|   ├── english_test.txt
+|   ├── english_train.txt
+|   ├── english_validation.txt
+|   ├── image_index_test.txt
+|   ├── image_index_train.txt
+|   ├── image_index_validation.txt
+|   ├── sentiment_test.txt
+|   ├── sentiment_train.txt
+|   ├── sentiment_validation.txt
+|   ├── test                    ----> test image directory
+|   ├── train                   ----> train image directory                                             
+|   └── validation              ----> validation image directory
+|
+|
 ├── libs
 │   ├── config.json             ----> saved some constant information for Downloading
 │   ├── datasetDownloader.py    ----> datasetDownloader class handles downloading and extraction of zip files
