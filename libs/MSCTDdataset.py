@@ -43,7 +43,7 @@ class MSCTD(data.Dataset):
             ------------------------
             `mode` : specifies `train` , `validation` or `test` dataset
             `root_dir` : is the path where the `train/validation/test` data is stored. they should be in ./Datasets/ directory. e.g. for train dataset, you should place train.zip in root_dir/Datasets/
-            `download` : downloads the data from the (google drive) if it's not available at `root_dir/Datasets/`.The name of our datasets differs slightly from the original datasets.
+            `download` : downloads the data from the (google drive) if it's (.zip file) not available at `root_dir/Datasets/`.The name of our datasets differs slightly from the original datasets.
             `transformer` : dataset transformation\\
             `read_mode` : 
                 `scene`  : maintaining time-series \\ 
