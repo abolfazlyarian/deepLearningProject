@@ -39,11 +39,15 @@ def read_sentiment_text(root_dir):
 class MSCTD(data.Dataset):
     def __init__(self,mode, download=True, root_dir=".",transformer=None, read_mode='scene'):
         """
-            mode : Enter type of dataset train , validation , test
-            root_dir : Just Enter path of Dataset files 
-            download=bool : download the dataset from 
-            transformer : expand dataset.
-            read_mode : scene or signle
+            Parameters:
+            ------------------------
+            `mode` : specifies `train` , `validation` or `test` dataset
+            `root_dir` : is the path where the `train/validation/test` data is stored. they should be in ./Datasets/ directory. e.g. for train dataset, you should place train.zip in root_dir/Datasets/
+            `download` : downloads the data from the (google drive) if it's not available at `root_dir/Datasets/`.The name of our datasets differs slightly from the original datasets.
+            `transformer` : dataset transformation\\
+            `read_mode` : 
+                `scene`  : maintaining time-series \\ 
+                `signle` : wihtout maintaining time-series
         """
         self.transformer = transformer
         self.read_mode = read_mode

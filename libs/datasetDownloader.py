@@ -5,7 +5,15 @@ import json
 
 
 class driveDownloader:
+    """
+        MSTCD downloader class from google drive 
+    """
     def __init__(self, mode, rootDir):
+        """
+            `mode` : train , validation or test
+            'rootDir` : is the path where the `train/validation/test` data store in it
+
+        """
         self.mode = mode
         self.root = rootDir
         with open('libs/config.json') as f:
