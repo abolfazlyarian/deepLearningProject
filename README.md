@@ -9,20 +9,19 @@
         
 Structure of Code is as follow 
 
-        libs    --->
-
-                DatasetMSCTD.py       ----> Dataset class for loading  and preparing data 
-
-                config.json           ----> saved some constant information for Downloading
-
-                datasetDownloader.py  ----> datasetDownloader class handles downloading and extraction of zip files
-
-                transforms.py         ----> transforms include some functions and compose class for adding augmentations and other changes in data
-
-        phase0.ipynb  ----> 
-
-                 main code for phase 0 of project is present here
-
+├── libs
+│   ├── config.json             ----> saved some constant information for Downloading
+│   ├── datasetDownloader.py    ----> datasetDownloader class handles downloading and extraction of zip files
+│   ├── MSCTDdataset.py         ----> Dataset class for loading  and preparing data 
+│   └── transforms.py           ----> transforms include some functions and compose class for adding augmentations and other changes in data
+|
+|
+├── phase0.ipynb                           ----> main code for phase 0 of project is present here
+├── README.md
+├── test_face_count_dict_mtcnn.pkl
+├── train_face_count_dict_mtcnn.pkl
+└── validation_face_count_dict_mtcnn.pkl
+        
 
 
 Structure of Dataset is as follow
