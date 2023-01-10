@@ -1,11 +1,4 @@
-        from google.colab import drive
-        drive.mount('/content/drive/')
 
-        rootDir = '/content/drive/MyDrive/deepLearningProject-main/*'
-
-        !cp -r $rootDir .
-
-        !pip install --upgrade --no-cache-dir gdown 
         
 Structure of Project is as follow 
 ```
@@ -59,6 +52,14 @@ deepLearningProject
 
 3 directories, 9 files
 ```
+from google.colab import drive
+drive.mount('/content/drive/')
+
+rootDir = '/content/drive/MyDrive/deepLearningProject-main/*'
+
+!cp -r $rootDir .
+
+!pip install --upgrade --no-cache-dir gdown 
           
 Note
 Our Notebook needs All of the files to be in one directory and the path of Datasets should be set in root_dir as input of the Dataset class.
