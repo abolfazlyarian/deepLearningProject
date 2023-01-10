@@ -48,7 +48,7 @@ trainrootpath
 ```
 --------------------
 ### Run on google colab
-If you want to use google colab to test our codes, first you upload our project's code in your drive as deepLearningProject then open phase0.ipynb and add the below commands to the top of it. they copy requirement files(libs files and .pkl data) to "/content" directory in colab. you notice that you have to download Datasets, so you set `root_dir="/content"` and `download=True` in loading dataset with MSTCD class
+If you want to use google colab to test our codes, first you upload our project's code in your drive as `deepLearningProject` then open phase0.ipynb and add the below commands to the top of it. they copy requirement files(libs files and .pkl data) to "/content" directory in colab. you notice that you have to download Datasets, so you set `root_dir="/content"` and `download=True` in loading dataset with MSTCD class
 ```
 from google.colab import drive
 drive.mount('/content/drive/')
