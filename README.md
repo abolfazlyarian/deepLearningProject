@@ -42,19 +42,20 @@ deepLearningProject
 
 Structure of Dataset is as follow
 ```
-Datasets
-├── english_test.txt
-├── english_train.txt
-├── english_validation.txt
-├── image_index_test.txt
-├── image_index_train.txt
-├── image_index_validation.txt
-├── sentiment_test.txt
-├── sentiment_train.txt
-├── sentiment_validation.txt
-├── test
-├── train
-└── validation
+deepLearningProject
+├── Datasets
+        ├── english_test.txt
+        ├── english_train.txt
+        ├── english_validation.txt
+        ├── image_index_test.txt
+        ├── image_index_train.txt
+        ├── image_index_validation.txt
+        ├── sentiment_test.txt
+        ├── sentiment_train.txt
+        ├── sentiment_validation.txt
+        ├── test
+        ├── train
+        └── validation
 
 3 directories, 9 files
 ```
