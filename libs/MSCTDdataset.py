@@ -35,7 +35,29 @@ def read_sentiment_text(root_dir):
     L=f.read().splitlines()
     f.close()
     return L
+class FACE(data.Dataset):
+    def __init__(self,root_dir=".",mode="train",transformer=None) -> None:
+        super().__init__()
+        self.transformer=transformer
+        if os.path.exists(os.path.join(root_dir,"FaceDataset","faceImage",mode, '*.jpg')):
+            raise Exception("FaceDataset Not found!")
+            
+        else:
+            self.img_list = sorted(np.array(glob.glob(os.path.join(root_dir,"FaceDataset","faceImage",mode, '*.jpg'))).tolist())
+            self.sentiment=read_sentiment_text(root_dir+"/Datasets/"+"sentiment_"+mode+".txt")
 
+    def __getitem__(self, index):
+        path=self.img_list[index]
+        img=self.transformer(np.array(cv2.imread(path), dtype=np.float32))
+        try:
+            sentiment_index = int(path.rsplit('/')[-1].split("_")[0])
+        except :
+            sentiment_index = int(path.rsplit('\\')[-1].split("_")[0])
+        sentiment=self.sentiment[sentiment_index]
+        
+        return img,sentiment
+    def __len__(self):
+        return len(self.img_list)
 class MSCTD(data.Dataset):
     def __init__(self,mode, download=True, root_dir=".",transformer=None, read_mode='scene'):
         """
