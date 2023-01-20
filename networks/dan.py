@@ -10,7 +10,7 @@ class DAN(nn.Module):
         super(DAN, self).__init__()
         
         resnet = models.resnet18(pretrained)
-        
+
         if pretrained:
             checkpoint = torch.load('./models/resnet18_msceleb.pth')
             resnet.load_state_dict(checkpoint['state_dict'],strict=True)

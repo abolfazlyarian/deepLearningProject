@@ -55,7 +55,7 @@ class FACE(data.Dataset):
             sentiment_index = int(path.rsplit('\\')[-1].split("_")[0])
         sentiment=self.sentiment[sentiment_index]
         
-        return img,sentiment
+        return img,int(sentiment)
     def __len__(self):
         return len(self.img_list)
 class MSCTD(data.Dataset):

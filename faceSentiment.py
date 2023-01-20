@@ -91,17 +91,18 @@ def run_training():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.enabled = True
 
-    model = DAN(num_head=args.num_head)
+    model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
     model.to(device)
 
     data_transforms = transforms.Compose([
+        transforms.ToTensor(),
         transforms.Resize((224, 224)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomApply([
                 transforms.RandomRotation(20),
                 transforms.RandomCrop(224, padding=32)
             ], p=0.2),
-        transforms.ToTensor(),
+        
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225]),
         transforms.RandomErasing(scale=(0.02,0.25)),
@@ -118,8 +119,8 @@ def run_training():
                                                pin_memory = True)
 
     data_transforms_val = transforms.Compose([
-        transforms.Resize((224, 224)),
         transforms.ToTensor(),
+        transforms.Resize((224, 224)),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])   
 
@@ -139,9 +140,10 @@ def run_training():
     criterion_pt = PartitionLoss()
 
     params = list(model.parameters()) + list(criterion_af.parameters())
-    optimizer = torch.optim.SGD(params,lr=args.lr, weight_decay = 1e-4, momentum=0.9)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-
+    # optimizer = torch.optim.SGD(params,lr=args.lr, weight_decay = 1e-4, momentum=0.9)
+    optimizer = torch.optim.Adam(params,lr=args.lr, weight_decay = 1e-6)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=args.epochs,eta_min=1e-5,last_epoch=-1)
 
     best_acc = 0
     for epoch in tqdm(range(1, args.epochs + 1)):
