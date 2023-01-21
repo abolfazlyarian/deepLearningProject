@@ -4,26 +4,26 @@ import warnings
 from tqdm import tqdm
 import argparse
 
-from PIL import Image
+from libs.MSCTDdataset import MSCTD
 import numpy as np
-import pandas as pd
-
 import torch
 import torch.nn as nn
 import torch.utils.data as data
 from torchvision import transforms
-
-from libs.MSCTDdataset import FACE
-
-from sklearn.metrics import balanced_accuracy_score
-
+import insightface
+from insightface.app import FaceAnalysis
+from insightface.data import get_image as ins_get_image
 from networks.dan import DAN
+from networks.MixFace import MixFaceMLP
+
+
+
 
 def warn(*args, **kwargs):
     pass
 warnings.warn = warn
 
-eps = sys.float_info.epsilon
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -33,54 +33,22 @@ def parse_args():
     parser.add_argument('--workers', default=4, type=int, help='Number of data loading workers.')
     parser.add_argument('--epochs', type=int, default=40, help='Total training epochs.')
     parser.add_argument('--num_head', type=int, default=4, help='Number of attention head.')
-
+    parser.add_argument('--Model_path', type=str, default=4, help='set pretraind DAN Model Path')
     return parser.parse_args()
 
+class ModelPip(nn.Module):
 
-class AffinityLoss(nn.Module):
-    def __init__(self, device, num_class=3, feat_dim=512):
-        super(AffinityLoss, self).__init__()
-        self.num_class = num_class
-        self.feat_dim = feat_dim
-        self.gap = nn.AdaptiveAvgPool2d(1)
-        self.device = device
+    def __init__(self,Model_path=None) -> None:
+        super(MixFaceMLP,self).__init__()
 
-        self.centers = nn.Parameter(torch.randn(self.num_class, self.feat_dim).to(device))
-
-    def forward(self, x, labels):
-        x = self.gap(x).view(x.size(0), -1)
-
-        batch_size = x.size(0)
-        distmat = torch.pow(x, 2).sum(dim=1, keepdim=True).expand(batch_size, self.num_class) + \
-                  torch.pow(self.centers, 2).sum(dim=1, keepdim=True).expand(self.num_class, batch_size).t()
-        distmat.addmm_(x, self.centers.t(), beta=1, alpha=-2)
-
-        classes = torch.arange(self.num_class).long().to(self.device)
-        labels = labels.unsqueeze(1).expand(batch_size, self.num_class)
-        mask = labels.eq(classes.expand(batch_size, self.num_class))
-
-        dist = distmat * mask.float()
-        dist = dist / self.centers.var(dim=0).sum()
-
-        loss = dist.clamp(min=1e-12, max=1e+12).sum() / batch_size
-
-        return loss
-
-class PartitionLoss(nn.Module):
-    def __init__(self, ):
-        super(PartitionLoss, self).__init__()
-    
-    def forward(self, x):
-        num_head = x.size(1)
-
-        if num_head > 1:
-            var = x.var(dim=1).mean()
-            ## add eps to avoid empty var case
-            loss = torch.log(1+num_head/(var+eps))
-        else:
-            loss = 0
-            
-        return loss
+        self.faceDetector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],allowed_modules=['detection'])
+        self.faceDetector.prepare(ctx_id=0)
+        self.DAN_Model = DAN(num_head=4,num_class=3,pretrained=False)
+        self.DAN_Model.load_state_dict(torch.load())
+        self.DAN_Model.requires_grad_(False)
+        self.DAN_Model.to(device)
+    def forward(self,x):
+        pass
 
 def run_training():
     args = parse_args()
@@ -92,6 +60,8 @@ def run_training():
         torch.backends.cudnn.enabled = True
 
     model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
+    model.load_state_dict(torch.load(args.Model_path))
+    model.requires_grad_(False)
     model.to(device)
 
     data_transforms = transforms.Compose([
@@ -275,7 +245,12 @@ def run_training():
 
         tqdm.write("[Epoch %d] test accuracy:%.4f. bacc:%.4f. Loss:%.3f" % (epoch, acc, balanced_acc, running_loss))
         tqdm.write("best_acc:" + str(best_acc))
-      
-        
-if __name__ == "__main__":        
-    run_training()
+
+
+
+if __name__ == "__main__":
+    train_Dataset=MSCTD(mode='train',download=True,root_dir='.',transformer=transforms.Compose([]))
+    val_Dataset=MSCTD(mode='validation',download=True,root_dir='.',transformer=transforms.Compose([]))
+    test_Dataset=MSCTD(mode='test',download=True,root_dir='.',transformer=transforms.Compose([]))
+    Models_path=os.listdir('checkpoints')
+    # path=os.path.join('checkpoints', "rafdb_epoch"+str(40)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))

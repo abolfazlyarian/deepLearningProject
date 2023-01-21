@@ -1,9 +1,12 @@
 import os
 import numpy as np
+import torch
 import glob
 import torch.utils.data as data
 import cv2
 import libs.datasetDownloader as downloader
+from torchvision import transforms
+from PIL import Image
 
 def read_data_file(root_dir):
     """get train or val images
@@ -35,6 +38,29 @@ def read_sentiment_text(root_dir):
     L=f.read().splitlines()
     f.close()
     return L
+class FaceNetwrok_Dataset(data.Dataset):
+    def __init__(self,FaceModel=None,root_dir='.',mode='train',transformer=None,) -> None:
+        self.transformer=transformer
+        self.app=FaceModel
+        super(FaceNetwrok_Dataset,self).__init__()
+        self.main_Dataset=MSCTD(mode=mode,root_dir=root_dir,transformer=transforms.Compose([]),read_mode='single')
+    def __getitem__(self, index):
+        img,_,sentiment,_=self.main_Dataset[index]
+        faces=self.app.get(img[0])
+        img_PIL=Image.fromarray(img[0].astype(np.uint8))
+        x=[]
+        
+        for i,f in zip(range(len(faces)),faces):
+            face=img_PIL.crop(f['bbox'])
+            x.append(self.transformer(face))
+
+        return torch.tensor(x),sentiment
+            
+
+
+
+
+
 class FACE(data.Dataset):
     def __init__(self,root_dir=".",mode="train",transformer=None) -> None:
         super().__init__()
