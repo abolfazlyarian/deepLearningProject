@@ -56,7 +56,8 @@ class FaceNetwrok_Dataset(data.Dataset):
 
         return torch.tensor(x),sentiment
             
-
+    def __len__(self):
+        return self.main_Dataset.__len__()
 
 
 
