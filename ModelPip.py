@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 from torchvision import transforms
+from sklearn.metrics import balanced_accuracy_score
 import insightface
 from insightface.app import FaceAnalysis
 from insightface.data import get_image as ins_get_image
@@ -35,6 +36,51 @@ def parse_args():
     parser.add_argument('--Model_path', type=str, default=4, help='set pretraind DAN Model Path')
     return parser.parse_args()
 
+class AffinityLoss(nn.Module):
+    def __init__(self, device, num_class=3, feat_dim=512):
+        super(AffinityLoss, self).__init__()
+        self.num_class = num_class
+        self.feat_dim = feat_dim
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.device = device
+
+        self.centers = nn.Parameter(torch.randn(self.num_class, self.feat_dim).to(device))
+
+    def forward(self, x, labels):
+        x = self.gap(x).view(x.size(0), -1)
+
+        batch_size = x.size(0)
+        distmat = torch.pow(x, 2).sum(dim=1, keepdim=True).expand(batch_size, self.num_class) + \
+                  torch.pow(self.centers, 2).sum(dim=1, keepdim=True).expand(self.num_class, batch_size).t()
+        distmat.addmm_(x, self.centers.t(), beta=1, alpha=-2)
+
+        classes = torch.arange(self.num_class).long().to(self.device)
+        labels = labels.unsqueeze(1).expand(batch_size, self.num_class)
+        mask = labels.eq(classes.expand(batch_size, self.num_class))
+
+        dist = distmat * mask.float()
+        dist = dist / self.centers.var(dim=0).sum()
+
+        loss = dist.clamp(min=1e-12, max=1e+12).sum() / batch_size
+
+        return loss
+
+class PartitionLoss(nn.Module):
+    def __init__(self, ):
+        super(PartitionLoss, self).__init__()
+    
+    def forward(self, x):
+        num_head = x.size(1)
+
+        if num_head > 1:
+            var = x.var(dim=1).mean()
+            ## add eps to avoid empty var case
+            loss = torch.log(1+num_head/(var+eps))
+        else:
+            loss = 0
+            
+        return loss
+
 
 def run_training():
     args = parse_args()
@@ -49,6 +95,9 @@ def run_training():
     model.load_state_dict(torch.load(args.Model_path))
     model.requires_grad_(False)
     model.to(device)
+
+    mixer = MixFaceMLP(max_num=6).cuda()
+
     faceDetector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],allowed_modules=['detection'])
     faceDetector.prepare(ctx_id=0)
     
@@ -112,17 +161,19 @@ def run_training():
         correct_sum = 0
         iter_cnt = 0
         model.train()
-
-        for (imgs, targets) in train_loader:
+        mixer.train()
+        for (faces, targets) in train_loader:
             iter_cnt += 1
             optimizer.zero_grad()
 
-            imgs = imgs.to(device)
+            faces = faces.to(device)
             targets = targets.to(device)
             
-            out,feat,heads = model(imgs)
+            out_,feat,heads = model(faces)
+            
+            out=mixer(out_)
 
-            loss = criterion_cls(out,targets) + 1* criterion_af(feat,targets) + 1*criterion_pt(heads)  #89.3 89.4
+            loss = criterion_cls(out,targets) # + 1* criterion_af(feat,targets) + 1*criterion_pt(heads)  #89.3 89.4
 
             loss.backward()
             optimizer.step()
@@ -147,12 +198,16 @@ def run_training():
             y_pred = []
 
             model.eval()
-            for (imgs, targets) in val_loader:
-                imgs = imgs.to(device)
+            mixer.eval()
+            
+            for (faces, targets) in val_loader:
+                faces = faces.to(device)
                 targets = targets.to(device)
                 
-                out,feat,heads = model(imgs)
-                loss = criterion_cls(out,targets) + criterion_af(feat,targets) + criterion_pt(heads)
+                out_,feat,heads = model(faces)
+                out=mixer(out_)
+
+                loss = criterion_cls(out,targets) #+ criterion_af(feat,targets) + criterion_pt(heads)
 
                 running_loss += loss
                 iter_cnt+=1
