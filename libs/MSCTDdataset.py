@@ -39,25 +39,24 @@ def read_sentiment_text(root_dir):
     f.close()
     return L
 class FaceNetwrok_Dataset(data.Dataset):
-    def __init__(self,FaceModel=None,root_dir='.',mode='train',transformer=None,) -> None:
-        self.transformer=transformer
-        self.app=FaceModel
+    def __init__(self,root_dir='.',mode='train',transformer=None,) -> None:
         super(FaceNetwrok_Dataset,self).__init__()
+        
+        self.transformer=transformer
+        self.facePath=os.path.join(root_dir,'FaceDataset','faceImage',mode) 
         self.main_Dataset=MSCTD(mode=mode,root_dir=root_dir,transformer=transforms.Compose([]),read_mode='single')
     def __getitem__(self, index):
-        img,_,sentiment,_=self.main_Dataset[index]
-        faces=self.app.get(img[0])
-        img_PIL=Image.fromarray(img[0].astype(np.uint8))
+        face_paths=glob.glob(os.path.join(self.facePath,f"{index}_*.jpg"))
+        _,_,sentiment,_=self.main_Dataset[index]
         x=[]
-        
-        for i,f in zip(range(len(faces)),faces):
-            face=img_PIL.crop(f['bbox'])
-            x.append(self.transformer(face))
-
-        return torch.tensor(x),sentiment
-            
+        if len(face_paths):
+            for i in face_paths:
+                x.append(self.transformer(cv2.imread(i))[None,:])
+            return torch.concat(x),torch.tensor(np.array(sentiment[0],dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths))],dtype=int))
+        else :
+            return torch.tensor([]),torch.tensor(np.array(sentiment[0],dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths))],dtype=int))
     def __len__(self):
-        return self.main_Dataset.__len__()
+         return self.main_Dataset.__len__()
 
 
 
