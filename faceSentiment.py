@@ -24,7 +24,7 @@ def warn(*args, **kwargs):
 warnings.warn = warn
 
 eps = sys.float_info.epsilon
-
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--Facedataset_path', type=str, default='datasets/raf-basic/', help='Raf-DB dataset path.')
@@ -33,6 +33,8 @@ def parse_args():
     parser.add_argument('--workers', default=4, type=int, help='Number of data loading workers.')
     parser.add_argument('--epochs', type=int, default=40, help='Total training epochs.')
     parser.add_argument('--num_head', type=int, default=4, help='Number of attention head.')
+    parser.add_argument('--model_path', type=str, default=4, help='Number of attention head.')
+    parser.add_argument('--Test', type=int, default=4, help='Number of attention head.')
 
     return parser.parse_args()
 
@@ -82,10 +84,8 @@ class PartitionLoss(nn.Module):
             
         return loss
 
-def run_training():
-    args = parse_args()
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+def run_training(args):
+    
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = True
@@ -233,13 +233,31 @@ def run_training():
                             os.path.join('checkpoints', "rafdb_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
                 tqdm.write('Model saved.')
 
-    with torch.no_grad():
 
+
+def test(args):
+    data_transforms_test = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Resize((224, 224)),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225])]) 
+
+    test_dataset = FACE(root_dir=args.Facedataset_path,mode='test',transformer=data_transforms_test)
+    print('Test set size:', test_dataset.__len__())
+    test_loader = torch.utils.data.DataLoader(test_dataset,
+                                               batch_size = args.batch_size,
+                                               num_workers = args.workers,
+                                               shuffle = False,  
+                                               pin_memory = True)
+    with torch.no_grad():
+        model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
+        model.load_state_dict(torch.load(args.model_path)['model_state_dict'])
+        model.requires_grad_(False).to(device)
         running_loss = 0.0
         iter_cnt = 0
         bingo_cnt = 0
         sample_cnt = 0
-        
+        best_acc = 0
         ## for calculating balanced accuracy
         y_true = []
         y_pred = []
@@ -250,9 +268,9 @@ def run_training():
             targets = targets.to(device)
             
             out,feat,heads = model(imgs)
-            loss = criterion_cls(out,targets) + criterion_af(feat,targets) + criterion_pt(heads)
+            # loss = criterion_cls(out,targets) + criterion_af(feat,targets) + criterion_pt(heads)
 
-            running_loss += loss
+            # running_loss += loss
             iter_cnt+=1
             _, predicts = torch.max(out, 1)
             correct_num  = torch.eq(predicts,targets)
@@ -262,8 +280,7 @@ def run_training():
             y_true.append(targets.cpu().numpy())
             y_pred.append(predicts.cpu().numpy())
     
-        running_loss = running_loss/iter_cnt   
-        scheduler.step()
+        # running_loss = running_loss/iter_cnt   
 
         acc = bingo_cnt.float()/float(sample_cnt)
         acc = np.around(acc.numpy(),4)
@@ -273,9 +290,12 @@ def run_training():
         y_pred = np.concatenate(y_pred)
         balanced_acc = np.around(balanced_accuracy_score(y_true, y_pred),4)
 
-        tqdm.write("[Epoch %d] test accuracy:%.4f. bacc:%.4f. Loss:%.3f" % (epoch, acc, balanced_acc, running_loss))
-        tqdm.write("best_acc:" + str(best_acc))
-      
+        print("test accuracy:%.4f. bacc:%.4f" % (acc, balanced_acc))
+       
         
-if __name__ == "__main__":        
-    run_training()
+if __name__ == "__main__":
+    args = parse_args()
+    if args.Test:
+        test(args)
+    else :
+        run_training(args)
