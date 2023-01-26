@@ -1,6 +1,7 @@
 import os
 import sys
 import warnings
+from prompt_toolkit.output import Output
 from tqdm import tqdm
 import argparse
 from torchvision.transforms import ToTensor, Resize, Compose
@@ -91,7 +92,12 @@ def collate_fn(x):
     data.append(i[0])
     labels.append(i[1])
     index.append(i[2])
-  return torch.concat(data),torch.concat(labels),torch.concat(index)
+  try:
+    return torch.concat(data),torch.concat(labels),torch.concat(index)
+  except:
+    print("Error")
+    return data,labels,index
+
 def f_size(x):
   a=[]
   index=[]
@@ -209,15 +215,80 @@ def run_training():
         Net4.train()
         Net5.train()
         for img,targets,index in train_loader:
-            targets=targets.to(device)
             
+            targets = targets.type(torch.LongTensor)
+            targets=targets.to(device)
             optimizer.zero_grad()
 
             if len(img):  
-                iter_cnt += 1
+              iter_cnt += 1
+              faces = img.to(device)
+              out_,feat,heads = model(faces)
+              loss=0
+              Output_total=[]
+              for logits,label in zip(torch.split(out_,f_size(index)),targets):
+                label = torch.tensor([label]).to(device)
+                if len(logits)==6:
+                    out=Net5(logits)
+                elif len(logits)==5:
+                    out=Net4(logits)
+                elif len(logits)==4:
+                    out=Net3(logits)
+                elif len(logits) == 3:
+                    out=Net2(logits)
+
+                elif len(logits) == 2:
+                    out=Net1(logits)
+                
+                elif len(logits) ==1:
+                    out=logits[0]
+                
+                # try:
+                # print(Output_total[0:1].shape)
+                Output_total.append(out[None,:])
+                # print(out.shape)
+
+              # print(Output_total[0])
+              O=torch.concat(Output_total)
+
+
+              loss = criterion_cls(O,targets)
+              
+              _, predicts = torch.max(O, 1)
+              correct_num = torch.eq(predicts, targets).sum()
+              correct_sum += correct_num
+
+              loss.backward()
+              optimizer.step()
+              running_loss += loss
+
+        acc = correct_sum.float() / float(train_dataset.__len__())
+        running_loss = running_loss/iter_cnt
+        tqdm.write('[Epoch %d] Training accuracy: %.4f. Loss: %.3f. LR %.6f' % (epoch, acc, running_loss,optimizer.param_groups[0]['lr']))
+        
+        with torch.no_grad():
+          running_loss = 0.0
+          iter_cnt = 0
+          bingo_cnt = 0
+          sample_cnt = 0
+          
+          ## for calculating balanced accuracy
+          y_true = []
+          y_pred = []
+
+          Net1.eval()
+          Net2.eval()
+          Net3.eval()
+          Net4.eval()
+          Net5.eval()
+          Output_total=[]
+          for img,targets,index in val_loader:
+            targets = targets.type(torch.LongTensor)
+            targets=targets.to(device)
+            if len(img):  
+                iter_cnt+=1
                 faces = img.to(device)
                 out_,feat,heads = model(faces)
-                loss=0
                 for logits,label in zip(torch.split(out_,f_size(index)),targets):
                     if len(logits)==6:
                         out=Net5(logits)
@@ -232,95 +303,45 @@ def run_training():
                         out=Net1(logits)
                     
                     elif len(logits) ==1:
-                        out=logits
+                        out=logits[0]
+                    Output_total.append(out[None,:])
+                    sample_cnt += 1
 
-                  # print(out[None,:],targets)
-                    loss += criterion_cls(out[None,:],label)
-
-                    _, predicts = torch.max(out[None,:], 1)
-                    correct_num = torch.eq(predicts, targets).sum()
-                    correct_sum += correct_num
-
-                loss.backward()
-                optimizer.step()
-                running_loss += loss
-        acc = correct_sum.float() / float(train_dataset.__len__())
-        running_loss = running_loss/iter_cnt
-        tqdm.write('[Epoch %d] Training accuracy: %.4f. Loss: %.3f. LR %.6f' % (epoch, acc, running_loss,optimizer.param_groups[0]['lr']))
-        
-        with torch.no_grad():
-            running_loss = 0.0
-            iter_cnt = 0
-            bingo_cnt = 0
-            sample_cnt = 0
-            
-            ## for calculating balanced accuracy
-            y_true = []
-            y_pred = []
-
-            Net1.eval()
-            Net2.eval()
-            Net3.eval()
-            Net4.eval()
-            Net5.eval()
-            
-            for img,targets,index in val_loader:
-                targets=targets.to(device)
-                if len(img):  
-                    iter_cnt+=1
-                    faces = img.to(device)
-                    out_,feat,heads = model(faces)
-                    for logits,label in zip(torch.split(out_,f_size(index)),targets):
-                        if len(logits)==6:
-                            out=Net5(logits)
-                        elif len(logits)==5:
-                            out=Net4(logits)
-                        elif len(logits)==4:
-                            out=Net3(logits)
-                        elif len(logits) == 3:
-                            out=Net2(logits)
-
-                        elif len(logits) == 2:
-                            out=Net1(logits)
-                        
-                        elif len(logits) ==1:
-                            out=logits
-                        # print(out[None,:],targets)
-                        running_loss += criterion_cls(out[None,:],label)
-                        
-                        _, predicts = torch.max(out[None,:], 1)
-                        correct_num = torch.eq(predicts, targets).sum()
-                        bingo_cnt += correct_num.cpu()
-                        sample_cnt += 1
- 
+                O=torch.concat(Output_total)
+                running_loss += criterion_cls(O,targets)
+                
+                _, predicts = torch.max(O, 1)
+                correct_num = torch.eq(predicts, targets).sum()
+                bingo_cnt += correct_num.cpu()
+                
                 y_true.append(targets.cpu().numpy())
                 y_pred.append(predicts.cpu().numpy())
         
-            running_loss = running_loss/iter_cnt   
-            scheduler.step()
+        running_loss = running_loss/iter_cnt   
+        scheduler.step()
 
-            acc = bingo_cnt.float()/float(sample_cnt)
-            acc = np.around(acc.numpy(),4)
-            best_acc = max(acc,best_acc)
+        acc = bingo_cnt.float()/float(sample_cnt)
+        acc = np.around(acc.numpy(),4)
+        best_acc = max(acc,best_acc)
 
-            y_true = np.concatenate(y_true)
-            y_pred = np.concatenate(y_pred)
-            balanced_acc = np.around(balanced_accuracy_score(y_true, y_pred),4)
+        y_true = np.concatenate(y_true)
+        y_pred = np.concatenate(y_pred)
+        balanced_acc = np.around(balanced_accuracy_score(y_true, y_pred),4)
 
-            tqdm.write("[Epoch %d] Validation accuracy:%.4f. bacc:%.4f. Loss:%.3f" % (epoch, acc, balanced_acc, running_loss))
-            tqdm.write("best_acc:" + str(best_acc))
+        tqdm.write("[Epoch %d] Validation accuracy:%.4f. bacc:%.4f. Loss:%.3f" % (epoch, acc, balanced_acc, running_loss))
+        tqdm.write("best_acc:" + str(best_acc))
 
-            if acc > 0.38 and acc == best_acc:
-                torch.save({'iter': epoch,
-                            'model_state_dict': model.state_dict(),
-                            'Net_1':Net1.state_dict(),
-                            'Net_2':Net2.state_dict(),
-                            'Net_3':Net3.state_dict(),
-                            'Net_4':Net4.state_dict(),
-                            'Net_5':Net5.state_dict(),
-                             'optimizer_state_dict': optimizer.state_dict(),},
-                            os.path.join('checkpoints', "PipModel_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
-                tqdm.write('Model saved.')
+        if acc > 0.38 and acc == best_acc:
+            torch.save({'iter': epoch,
+                        'model_state_dict': model.state_dict(),
+                        'Net_1':Net1.state_dict(),
+                        'Net_2':Net2.state_dict(),
+                        'Net_3':Net3.state_dict(),
+                        'Net_4':Net4.state_dict(),
+                        'Net_5':Net5.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict(),},
+                        os.path.join('checkpoints', "PipModel_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
+            tqdm.write('Model saved.')
 
 
 

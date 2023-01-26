@@ -44,17 +44,17 @@ class FaceNetwrok_Dataset(data.Dataset):
         
         self.transformer=transformer
         self.facePath=os.path.join(root_dir,'FaceDataset','faceImage',mode) 
-        self.main_Dataset=MSCTD(mode=mode,root_dir=root_dir,transformer=transforms.Compose([]),read_mode='single')
+        self.main_Dataset=MSCTD(mode=mode,download=False,root_dir=root_dir,transformer=transforms.Compose([]),read_mode='single')
     def __getitem__(self, index):
         face_paths=glob.glob(os.path.join(self.facePath,f"{index}_*.jpg"))
         _,_,sentiment,_=self.main_Dataset[index]
         x=[]
         if len(face_paths):
-            for i in face_paths:
+            for i in face_paths[0:6]:
                 x.append(self.transformer(cv2.imread(i))[None,:])
-            return torch.concat(x),torch.tensor(np.array(sentiment[0],dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths))],dtype=int))
-        else :
-            return torch.tensor([]),torch.tensor(np.array(sentiment[0],dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths))],dtype=int))
+            return torch.concat(x),torch.tensor(np.array(sentiment,dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths[0:6]))],dtype=int))
+        else : # np.array(sentiment,dtype=int)  np.array([index for i in range(len(face_paths))
+            return torch.tensor([]),torch.tensor([]),torch.tensor([])
     def __len__(self):
          return self.main_Dataset.__len__()
 
