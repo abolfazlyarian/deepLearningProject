@@ -54,7 +54,7 @@ class FaceNetwrok_Dataset(data.Dataset):
                 x.append(self.transformer(cv2.imread(i))[None,:])
             return torch.concat(x),torch.tensor(np.array(sentiment,dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths[0:6]))],dtype=int))
         else : # np.array(sentiment,dtype=int)  np.array([index for i in range(len(face_paths))
-            return torch.tensor([]),torch.tensor([]),torch.tensor([])
+            return torch.tensor([]),torch.tensor(np.array(sentiment,dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths[0:6]))],dtype=int))
     def __len__(self):
          return self.main_Dataset.__len__()
 
