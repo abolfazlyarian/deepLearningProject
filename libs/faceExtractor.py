@@ -1,0 +1,111 @@
+import numpy as np
+from insightface.app import FaceAnalysis
+import os
+import json
+from tqdm import tqdm
+from PIL import Image
+from torchvision import transforms
+from libs.PRIME.diffeomorphism import Diffeo
+from libs.PRIME.rand_filter import RandomFilter
+from libs.PRIME.color_jitter import RandomSmoothColor
+
+class faceExtractor():
+    def __init__(self,
+                 mode,
+                 rootDir=".",
+                 max_num=1,
+                 transform_input=transforms.Compose([transforms.ToPILImage()]),
+                 transform_orginal=transforms.Compose([]),
+                 transform_aug=transforms.Compose([transforms.PILToTensor(),transforms.Resize((224,224))]),
+                 augmentation=False) -> None:
+        
+        self.root=rootDir
+        self.mode=mode
+
+        if not os.path.exists(f"{self.root}/faceDataset"):
+          os.mkdir(f"{self.root}/faceDataset")
+        if not os.path.exists(f"{self.root}/faceDataset/orginalFace"):
+          os.mkdir(f"{self.root}/faceDataset/orginalFace")
+        if not os.path.exists(f"{self.root}/faceDataset/orginalFace/"+mode):
+          os.mkdir(f"{self.root}/faceDataset/orginalFace/"+mode)
+        
+        if augmentation and not os.path.exists(f"{self.root}/faceDataset/augmentationFace"):
+           os.mkdir(f"{self.root}/faceDataset/augmentationFace")
+        if augmentation and not os.path.exists(f"{self.root}/faceDataset/augmentationFace/"+mode):
+          os.mkdir(f"{self.root}/faceDataset/augmentationFace/"+mode)
+
+        
+        self.fault=0
+        self.idx_fault=[]
+        self.max_len=0
+        self.app = FaceAnalysis(providers=['CUDAExecutionProvider'],allowed_modules=['detection']) # , 'CPUExecutionProvider'
+        self.tf_input = transform_input
+        self.tf_orginal = transform_orginal
+        self.tf_aug =transform_aug
+        self.aug=augmentation
+        self.max_num = max_num
+        
+        if augmentation:
+            with open('libs/PRIME/configPRIME.json') as f:
+                self.configPRIME = json.load(f)
+
+            par_diffeo = self.configPRIME["diffeo"]
+            par_color = self.configPRIME["color_jit"]
+            par_rand = self.configPRIME["rand_filter"]
+
+            self.diffeo = Diffeo(sT=par_diffeo["sT"], rT=par_diffeo["rT"],
+                            scut=par_diffeo["scut"], rcut=par_diffeo["rcut"],
+                            cutmin=par_diffeo["cutmin"], cutmax=par_diffeo["cutmax"],
+                            alpha=par_diffeo["alpha"], stochastic=True)
+
+            self.color = RandomSmoothColor(cut=par_color["cut"], T=par_color["T"],
+                                      freq_bandwidth=par_color["max_freqs"], stochastic=True)
+
+            self.filt = RandomFilter(kernel_size=par_rand["kernel_size"],
+                                sigma=par_rand["sigma"], stochastic=True)
+
+    def run(self,Dataset):
+        self.app.prepare(ctx_id=0,det_size=(Dataset[0][0][0].size(1),Dataset[0][0][0].size(2)))
+        for img_tensor,_,sentiment,idx in tqdm(Dataset):
+            img = np.asarray(self.tf_input(img_tensor[0]/255))
+            faces = self.app.get(img)
+            img_PIL=Image.fromarray(img.astype(np.uint8))
+            face_count=len(faces)
+
+            if face_count > self.max_len:
+              self.max_len = face_count
+
+            if face_count == 0:
+                self.fault+=1
+                self.idx_fault.append(idx)
+
+            else:
+
+              if face_count>self.max_num:
+                a = self.max_num
+              else :
+                a = face_count
+
+              for i,f in zip(range(a),faces):
+                  face=img_PIL.crop(f['bbox'])
+                  face_tf_org = self.tf_orginal(face)
+                  face_tf_org.save(f"{self.root}/faceDataset/orginalFace/{self.mode}/"+f'{idx}_{i}.jpg')
+                  if self.aug:
+                    tensor2PIL = transforms.ToPILImage()
+                    face_tf = self.tf_aug(face)/255
+                    # diffeo augmentation
+                    aug_diffeo = self.diffeo(face_tf)
+                    tensor2PIL(aug_diffeo).save(f"{self.root}/faceDataset/augmentationFace/{self.mode}/"+f'{idx}_{i}_0.jpg')
+                    # color augmentation
+                    aug_color = self.color(face_tf)
+                    tensor2PIL(aug_color).save(f"{self.root}/faceDataset/augmentationFace/{self.mode}/"+f'{idx}_{i}_1.jpg')
+                    # filter augmentation
+                    aug_filt = self.filt(face_tf)
+                    tensor2PIL(aug_filt).save(f"{self.root}/faceDataset/augmentationFace/{self.mode}/"+f'{idx}_{i}_2.jpg')
+
+                     
+                     
+                     
+
+                     
+                

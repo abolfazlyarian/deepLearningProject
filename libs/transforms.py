@@ -1,10 +1,7 @@
 # -*-coding:UTF-8-*-
 from __future__ import division
 import torch
-import random
 import numpy as np
-import numbers
-import collections
 import cv2
 
 def normalize(tensor, mean, std):

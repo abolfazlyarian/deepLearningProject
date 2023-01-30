@@ -69,26 +69,26 @@ class RandomSmoothColor(torch.nn.Module):
         return self.__class__.__name__ + f"(T={self.T}, cut={self.cut})"
 
 
-if __name__ == "__main__":
-    import imagenet_stubs
-    import matplotlib.pyplot as plt
-    import PIL.Image
-    import torchvision.transforms as T
+# if __name__ == "__main__":
+#     import imagenet_stubs
+#     import matplotlib.pyplot as plt
+#     import PIL.Image
+#     import torchvision.transforms as T
 
-    random_color = RandomSmoothColor(100, 0.02)
+#     random_color = RandomSmoothColor(100, 0.02)
 
-    for image_path in imagenet_stubs.get_image_paths():
-        im = PIL.Image.open(image_path)
-        plt.axis("off")
-        plt.imshow(im, interpolation="nearest")
-        plt.show()
+#     for image_path in imagenet_stubs.get_image_paths():
+#         im = PIL.Image.open(image_path)
+#         plt.axis("off")
+#         plt.imshow(im, interpolation="nearest")
+#         plt.show()
 
-        x = T.ToTensor()(im)
-        x2 = random_color(x)
-        plt.imshow(x.permute(1, 2, 0))
-        plt.savefig("test.png")
+#         x = T.ToTensor()(im)
+#         x2 = random_color(x)
+#         plt.imshow(x.permute(1, 2, 0))
+#         plt.savefig("test.png")
 
-        plt.imshow(x2.permute(1, 2, 0))
-        plt.savefig("test2.png")
+#         plt.imshow(x2.permute(1, 2, 0))
+#         plt.savefig("test2.png")
 
-        t = 0
+#         t = 0
