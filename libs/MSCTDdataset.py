@@ -2,10 +2,11 @@ import numpy as np
 import torch.utils.data as data
 import cv2
 import libs.datasetDownloader as downloader
+from torchvision.transforms import Compose
 from libs.utils import read_data_file, read_index_file, read_sentiment_text, read_text_file
     
 class MSCTD(data.Dataset):
-    def __init__(self,mode, download=True, root_dir=".",transformer=None, read_mode='scene'):
+    def __init__(self,mode, download=True, root_dir=".",transformer=Compose([]), read_mode='scene'):
         """
             Parameters:
             ------------------------

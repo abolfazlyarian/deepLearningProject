@@ -1,40 +1,17 @@
 import os
 import sys
-import warnings
 from tqdm import tqdm
-import argparse
-
 import numpy as np
-
 import torch
 import torch.nn as nn
 from torchvision import transforms
-
 from libs.faceDataset import faceDataset
-
 from sklearn.metrics import balanced_accuracy_score
-
 from networks.dan import DAN
 
-def warn(*args, **kwargs):
-    pass
-warnings.warn = warn
 
 eps = sys.float_info.epsilon
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--Facedataset_path', type=str, default='datasets/raf-basic/', help='Raf-DB dataset path.')
-    parser.add_argument('--batch_size', type=int, default=256, help='Batch size.')
-    parser.add_argument('--lr', type=float, default=0.1, help='Initial learning rate for sgd.')
-    parser.add_argument('--workers', default=4, type=int, help='Number of data loading workers.')
-    parser.add_argument('--epochs', type=int, default=40, help='Total training epochs.')
-    parser.add_argument('--num_head', type=int, default=4, help='Number of attention head.')
-    parser.add_argument('--model_path', type=str, default=4, help='Number of attention head.')
-    parser.add_argument('--Test', type=int, default=4, help='Number of attention head.')
-    parser.add_argument('--aug', type=list, default=[], help='list of augmentation.')
-
-    return parser.parse_args()
 
 
 class AffinityLoss(nn.Module):
@@ -82,14 +59,32 @@ class PartitionLoss(nn.Module):
             
         return loss
 
-def run_training(args):
+def train(batch_size: int=64,
+          Facedataset_path: str='.',
+          num_head: int=4,
+          workers: int=2,
+          lr: float=0.1,
+          epochs: int=40,
+          augmentation: list=[]):
+    
+    """
+        Parameters:
+        ------------------------
+        `batch_size` : size of batch
+        `Facedataset_path` : Raf-DB dataset path ?????????????????
+        `num_head` : Number of attention head
+        `workers` : Number of data loading workers
+        `lr` : Initial learning rate for sgd
+        `epochs` : Total training epochs
+        `augmentation` : list of augmentation
+    """
     
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.enabled = True
 
-    model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
+    model = DAN(num_head=num_head,num_class=3,pretrained=False)
     model.to(device)
 
     data_transforms = transforms.Compose([
@@ -106,13 +101,13 @@ def run_training(args):
         transforms.RandomErasing(scale=(0.02,0.25)),
         ])
     
-    train_dataset = faceDataset(root_dir=args.Facedataset_path,mode='train',transformer=data_transforms)
+    train_dataset = faceDataset(root_dir=Facedataset_path,mode='train',transformer=data_transforms)
     
     print('Whole train set size:', train_dataset.__len__())
 
     train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size = args.batch_size,
-                                               num_workers = args.workers,
+                                               batch_size = batch_size,
+                                               num_workers = workers,
                                                shuffle = True,  
                                                pin_memory = True)
 
@@ -123,22 +118,23 @@ def run_training(args):
                                  std=[0.229, 0.224, 0.225])])   
 
        
-    val_dataset = faceDataset(root_dir=args.Facedataset_path,augmentation=[], mode='validation',transformer=data_transforms_val)
+    val_dataset = faceDataset(root_dir=Facedataset_path,augmentation=augmentation, mode='validation',transformer=data_transforms_val)
 
     print('Validation set size:', val_dataset.__len__())
     
     val_loader = torch.utils.data.DataLoader(val_dataset,
-                                               batch_size = args.batch_size,
-                                               num_workers = args.workers,
+                                               batch_size = batch_size,
+                                               num_workers = workers,
                                                shuffle = False,  
                                                pin_memory = True)
-    # test_dataset = faceDataset(root_dir=args.Facedataset_path,augmentation=[],mode='test',transformer=data_transforms_val)
+    
+    # test_dataset = faceDataset(root_dir=Facedataset_path,augmentation=[],mode='test',transformer=data_transforms_val)
 
     # print('Test set size:', test_dataset.__len__())
     
     # test_loader = torch.utils.data.DataLoader(test_dataset,
-    #                                            batch_size = args.batch_size,
-    #                                            num_workers = args.workers,
+    #                                            batch_size = batch_size,
+    #                                            num_workers = workers,
     #                                            shuffle = False,  
     #                                            pin_memory = True)
 
@@ -147,13 +143,13 @@ def run_training(args):
     criterion_pt = PartitionLoss()
 
     params = list(model.parameters()) + list(criterion_af.parameters())
-    # optimizer = torch.optim.SGD(params,lr=args.lr, weight_decay = 1e-4, momentum=0.9)
-    optimizer = torch.optim.Adam(params,lr=args.lr, weight_decay = 1e-5)
+    # optimizer = torch.optim.SGD(params,lr=lr, weight_decay = 1e-4, momentum=0.9)
+    optimizer = torch.optim.Adam(params,lr=lr, weight_decay = 1e-5)
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=args.epochs,eta_min=1e-5,last_epoch=-1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=epochs,eta_min=1e-5,last_epoch=-1)
 
     best_acc = 0
-    for epoch in tqdm(range(1, args.epochs + 1)):
+    for epoch in tqdm(range(1, epochs + 1)):
         running_loss = 0.0
         correct_sum = 0
         iter_cnt = 0
@@ -231,25 +227,41 @@ def run_training(args):
                             os.path.join('checkpoints', "rafdb_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
                 tqdm.write('Model saved.')
 
-
-
-def test(args):
+#TODO ????????????
+def test(batch_size: int=64,
+         model_path: str='.',
+         Facedataset_path: str='.',
+         num_head: int=4,
+         workers: int=2):
+    
+    """
+        Parameters:
+        ------------------------
+        `Facedataset_path` : Raf-DB dataset path ?????????????????
+        `num_head` : Number of attention head
+        `model_path` : path of model saved ????????????????????
+        `batch_size` : size of batch
+        `workers` : Number of data loading workers
+    """
     data_transforms_test = transforms.Compose([
     transforms.ToTensor(),
     transforms.Resize((224, 224)),
     transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])]) 
 
-    test_dataset = faceDataset(root_dir=args.Facedataset_path,augmentation=[],mode='test',transformer=data_transforms_test)
+    test_dataset = faceDataset(root_dir=Facedataset_path,
+                               augmentation=[],
+                               mode='test',
+                               transformer=data_transforms_test)
     print('Test set size:', test_dataset.__len__())
     test_loader = torch.utils.data.DataLoader(test_dataset,
-                                               batch_size = args.batch_size,
-                                               num_workers = args.workers,
+                                               batch_size = batch_size,
+                                               num_workers = workers,
                                                shuffle = False,  
                                                pin_memory = True)
     with torch.no_grad():
-        model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
-        model.load_state_dict(torch.load(args.model_path)['model_state_dict'])
+        model = DAN(num_head=num_head, num_class=3, pretrained=False)
+        model.load_state_dict(torch.load(model_path)['model_state_dict'])
         model.requires_grad_(False).to(device)
         running_loss = 0.0
         iter_cnt = 0
@@ -290,10 +302,4 @@ def test(args):
 
         print("test accuracy:%.4f. bacc:%.4f" % (acc, balanced_acc))
        
-        
-if __name__ == "__main__":
-    args = parse_args()
-    if args.Test:
-        test(args)
-    else :
-        run_training(args)
+

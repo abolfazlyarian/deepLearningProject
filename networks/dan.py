@@ -66,7 +66,6 @@ class CrossAttentionHead(nn.Module):
 
         return ca
 
-
 class SpatialAttention(nn.Module):
 
     def __init__(self):
@@ -119,4 +118,3 @@ class ChannelAttention(nn.Module):
         out = sa * y
         
         return out
-

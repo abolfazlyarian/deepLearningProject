@@ -5,6 +5,8 @@ import torch.utils.data as data
 import cv2
 from libs.utils import read_sentiment_text
 from torchvision import transforms
+import torch
+from libs.MSCTDdataset import MSCTD
 
 
 class faceDataset(data.Dataset):
@@ -54,3 +56,25 @@ class faceDataset(data.Dataset):
     def __len__(self):
         return len(self.img_list)
 
+#TODO augmentation input ....
+class faceNetwrokDataset(data.Dataset):
+    def __init__(self,mode, root_dir='.', transformer=transforms.Compose([])) -> None:
+        super(faceNetwrokDataset,self).__init__()
+        
+        self.transformer=transformer
+        self.facePath=os.path.join(root_dir,'FaceDataset','faceImage',mode) 
+        self.main_Dataset=MSCTD(mode=mode,download=False,root_dir=root_dir,transformer=transforms.Compose([]),read_mode='single')
+    
+    def __getitem__(self, index):
+        face_paths=glob.glob(os.path.join(self.facePath,f"{index}_*.jpg"))
+        _,_,sentiment,_=self.main_Dataset[index]
+        x=[]
+        if len(face_paths):
+            for i in face_paths[0:6]:
+                x.append(self.transformer(cv2.imread(i))[None,:])
+            return torch.concat(x),torch.tensor(np.array(sentiment,dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths[0:6]))],dtype=int))
+        else : # np.array(sentiment,dtype=int)  np.array([index for i in range(len(face_paths))
+            return torch.tensor([]),torch.tensor(np.array(sentiment,dtype=int)),torch.tensor(np.array([index for i in range(len(face_paths[0:6]))],dtype=int))
+    
+    def __len__(self):
+        return self.main_Dataset.__len__()

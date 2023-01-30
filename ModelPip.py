@@ -1,7 +1,6 @@
 import os
 import sys
 import warnings
-from prompt_toolkit.output import Output
 from tqdm import tqdm
 import argparse
 from torchvision.transforms import ToTensor, Resize, Compose
@@ -12,20 +11,14 @@ import torch.nn as nn
 import torch.utils.data as data
 from torchvision import transforms
 from sklearn.metrics import balanced_accuracy_score
-# import insightface
-# from insightface.app import FaceAnalysis
-# from insightface.data import get_image as ins_get_image
+
 from networks.dan import DAN
 from networks.MixFace import MixFaceMLP
 from PIL import Image
 
 
+
 eps = sys.float_info.epsilon
-
-def warn(*args, **kwargs):
-    pass
-warnings.warn = warn
-
 
 
 def parse_args():
@@ -89,15 +82,17 @@ def collate_fn(x):
   data=[]
   index=[]
   for i in x:
-    data.append(i[0])
-    labels.append(i[1])
-    index.append(i[2])
-  try:
-    return torch.concat(data),torch.concat(labels),torch.concat(index)
-  except:
-    print("Error")
-    return data,labels,index
+    if   len(i[1]) != 0 and len(i[2]) != 0 and len(i[0]) != 0 :
+      # print(len(i[0]),len(i[1]),len(i[2]))
+      data.append(i[0])
+      labels.append(i[1])
+      index.append(i[2])
 
+  if len(labels):
+    return torch.concat(data),torch.concat(labels),torch.concat(index)
+  else:
+    return #torch.tensor([]),torch.tensor([]),torch.tensor([])
+    
 def f_size(x):
   a=[]
   index=[]
@@ -111,9 +106,15 @@ def f_size(x):
   index_n.append(len(x))
   return (np.array(index_n[1::])-np.array(index)).tolist()
 
+#TODO augmentation
+def run_training(batch_size: int=64,
+          MSCTD_path: str='.',
+          num_head: int=4,
+          workers: int=2,
+          lr: float=0.1,
+          epochs: int=40,
+          augmentation: list=[]):
 
-def run_training():
-    args = parse_args()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if torch.cuda.is_available():
@@ -121,8 +122,8 @@ def run_training():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.enabled = True
 
-    model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
-    # model.load_state_dict(torch.load(args.Model_path)['model_state_dict'])
+    model = DAN(num_head=num_head,num_class=3,pretrained=False)
+    # model.load_state_dict(torch.load(Model_path)['model_state_dict'])
     model.requires_grad_(False)
     model.to(device)
 
@@ -131,13 +132,14 @@ def run_training():
     Net3=MixFaceMLP(dim=4)
     Net2=MixFaceMLP(dim=3)
     Net1=MixFaceMLP(dim=2)
-
+    Net_Total=MixFaceMLP(dim=6)
     
     Net1.to(device)
     Net2.to(device)
     Net3.to(device)
     Net4.to(device)
     Net5.to(device)
+    Net_Total.to(device)
     # faceDetector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],allowed_modules=['detection'])
     # faceDetector.prepare(ctx_id=0)
     
@@ -148,15 +150,15 @@ def run_training():
                                  std=[0.229, 0.224, 0.225])
         ])
     
-    # train_dataset = MSCTD(root_dir=args.MSCTD_path,mode='train',transformer=Compose([]),read_mode='single')
-    train_dataset = FaceNetwrok_Dataset(root_dir=args.MSCTD_path,mode='train',transformer=data_transforms)
+    # train_dataset = MSCTD(root_dir=MSCTD_path,mode='train',transformer=Compose([]),read_mode='single')
+    train_dataset = FaceNetwrok_Dataset(root_dir=MSCTD_path,mode='train',transformer=data_transforms)
 
     
     print('Whole train set size:', train_dataset.__len__())
 
     train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size = args.batch_size,
-                                               num_workers = args.workers,
+                                               batch_size = batch_size,
+                                               num_workers = workers,
                                                shuffle = True,
                                                collate_fn=collate_fn,  
                                                pin_memory = True)
@@ -168,27 +170,27 @@ def run_training():
                                  std=[0.229, 0.224, 0.225])])   
 
        
-    # val_dataset = MSCTD(root_dir=args.MSCTD_path,mode='validation',transformer=Compose([]),read_mode='single')
-    val_dataset = FaceNetwrok_Dataset(root_dir=args.MSCTD_path,mode='validation',transformer=data_transforms_val)
+    # val_dataset = MSCTD(root_dir=MSCTD_path,mode='validation',transformer=Compose([]),read_mode='single')
+    val_dataset = FaceNetwrok_Dataset(root_dir=MSCTD_path,mode='validation',transformer=data_transforms_val)
 
     print('Validation set size:', val_dataset.__len__())
    
       
     val_loader = torch.utils.data.DataLoader(val_dataset,
-                                               batch_size = args.batch_size,
-                                               num_workers = args.workers,
+                                               batch_size = batch_size,
+                                               num_workers = workers,
                                                shuffle = False,collate_fn= collate_fn, 
                                                pin_memory = True)
 
 
 
-    # test_dataset = FaceNetwrok_Dataset(FaceModel=faceDetector,root_dir=args.MSCTD_path,mode='test',transformer=data_transforms_val)
+    # test_dataset = FaceNetwrok_Dataset(FaceModel=faceDetector,root_dir=MSCTD_path,mode='test',transformer=data_transforms_val)
 
     # print('Test set size:', test_dataset.__len__())
     
     # test_loader = torch.utils.data.DataLoader(test_dataset,
     #                                            batch_size = 1,
-    #                                            num_workers = args.workers,
+    #                                            num_workers = workers,
     #                                            shuffle = False,  
     #                                            pin_memory = True)
 
@@ -198,13 +200,15 @@ def run_training():
 
     # params = list(model.parameters()) + list(criterion_af.parameters())
     params=list(Net1.parameters())+list(Net2.parameters())+list(Net3.parameters())+list(Net4.parameters())+list(Net5.parameters())
-    # optimizer = torch.optim.SGD(params,lr=args.lr, weight_decay = 1e-4, momentum=0.9)
-    optimizer = torch.optim.Adam(params,lr=args.lr, weight_decay = 1e-5)
+    params=Net_Total.parameters()
+
+    # optimizer = torch.optim.SGD(params,lr=lr, weight_decay = 1e-4, momentum=0.9)
+    optimizer = torch.optim.Adam(params,lr=lr, weight_decay = 1e-5)
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=args.epochs,eta_min=1e-5,last_epoch=-1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=epochs,eta_min=1e-5,last_epoch=-1)
 
     best_acc = 0
-    for epoch in tqdm(range(1, args.epochs + 1)):
+    for epoch in tqdm(range(1, epochs + 1)):
         running_loss = 0.0
         correct_sum = 0
         iter_cnt = 0
@@ -214,6 +218,7 @@ def run_training():
         Net3.train()
         Net4.train()
         Net5.train()
+        Net_Total.train()
         for img,targets,index in train_loader:
             
             targets = targets.type(torch.LongTensor)
@@ -228,6 +233,13 @@ def run_training():
               Output_total=[]
               for logits,label in zip(torch.split(out_,f_size(index)),targets):
                 label = torch.tensor([label]).to(device)
+
+
+                # out=Net_Total(logits)
+                # v,_=torch.mode(torch.argmax(logits,1))
+                # out = torch.zeros(size=(3,)).to(device)
+                # out[v] = 1.0
+
                 if len(logits)==6:
                     out=Net5(logits)
                 elif len(logits)==5:
@@ -236,10 +248,8 @@ def run_training():
                     out=Net3(logits)
                 elif len(logits) == 3:
                     out=Net2(logits)
-
                 elif len(logits) == 2:
                     out=Net1(logits)
-                
                 elif len(logits) ==1:
                     out=logits[0]
                 
@@ -281,7 +291,8 @@ def run_training():
           Net3.eval()
           Net4.eval()
           Net5.eval()
-          Output_total=[]
+          Net_Total.eval()
+          
           for img,targets,index in val_loader:
             targets = targets.type(torch.LongTensor)
             targets=targets.to(device)
@@ -289,7 +300,17 @@ def run_training():
                 iter_cnt+=1
                 faces = img.to(device)
                 out_,feat,heads = model(faces)
+                Output_total=[]
                 for logits,label in zip(torch.split(out_,f_size(index)),targets):
+
+                    # out=Net_Total(logits)
+                    # v,_=torch.mode(torch.argmax(logits,1))
+                    # out = torch.zeros(size=(3,)).to(device)
+                    # out[v] = 1.0
+
+
+
+
                     if len(logits)==6:
                         out=Net5(logits)
                     elif len(logits)==5:
@@ -316,7 +337,7 @@ def run_training():
                 
                 y_true.append(targets.cpu().numpy())
                 y_pred.append(predicts.cpu().numpy())
-        
+            
         running_loss = running_loss/iter_cnt   
         scheduler.step()
 
@@ -345,11 +366,152 @@ def run_training():
 
 
 
+def test():
+    args = parse_args()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    saved_model=torch.load(args.Model_path)
+
+    model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
+    model.load_state_dict(saved_model['model_state_dict'])
+    model.requires_grad_(False)
+    model.to(device)
+
+    Net_Total=MixFaceMLP(dim=6)
+    Net_Total.to(device)
+    # Net5=MixFaceMLP(dim=6)
+    # Net5.load_state_dict(saved_model['Net_5'])
+
+    # Net4=MixFaceMLP(dim=5)
+    # Net4.load_state_dict(saved_model['Net_4'])
+
+    # Net3=MixFaceMLP(dim=4)
+    # Net3.load_state_dict(saved_model['Net_3'])
+
+    # Net2=MixFaceMLP(dim=3)
+    # Net2.load_state_dict(saved_model['Net_2'])
+
+    # Net1=MixFaceMLP(dim=2)
+    # Net1.load_state_dict(saved_model['Net_1'])
+
+
+    
+    # Net1.to(device)
+    # Net2.to(device)
+    # Net3.to(device)
+    # Net4.to(device)
+    # Net5.to(device)
+    def collate_fn_test(x):
+      labels=[]
+      data=[]
+      index=[]
+      miss_face_label=[]
+      for i in x:
+        if   len(i[1]) != 0 and len(i[2]) != 0 and len(i[0]) != 0 :
+          # print(len(i[0]),len(i[1]),len(i[2]))
+          data.append(i[0])
+          labels.append(i[1])
+          index.append(i[2])
+        else :
+          miss_face_label.append(i[1])
+          
+
+      if len(labels):
+        return torch.concat(data),torch.concat(labels),torch.concat(index),torch.concat(miss_face_label)
+      else:
+        return #torch.tensor([]),torch.tensor([]),torch.tensor([])
+    
+    data_transforms_val = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((224, 224)),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+
+    test_dataset = FaceNetwrok_Dataset(root_dir=args.FaceDataset_path,mode='test',transformer=data_transforms_val)
+
+    print('Test set size:', test_dataset.__len__())
+    
+    test_loader = torch.utils.data.DataLoader(test_dataset,
+                                            batch_size = args.batch_size,
+                                            num_workers = args.workers,
+                                            collate_fn=collate_fn_test,
+                                            shuffle = False,  
+                                            pin_memory = True)
+
+    criterion_cls = torch.nn.CrossEntropyLoss()
+    y_true=[]
+    y_pred=[]
+    running_loss = 0.0
+    iter_cnt = 0
+    bingo_cnt = 0
+    sample_cnt = 0
+    for img,targets,index,miss_face_label in tqdm(test_loader):
+        targets = targets.type(torch.LongTensor)
+        targets=targets.to(device)
+        if len(img):  
+            iter_cnt+=1
+            faces = img.to(device)
+            out_,feat,heads = model(faces)
+            Output_total=[]
+            for logits,label in zip(torch.split(out_,f_size(index)),targets):
+
+                out=Net_Total(logits)
+                # if len(logits)==6:
+                #     out=Net5(logits)
+                # elif len(logits)==5:
+                #     out=Net4(logits)
+                # elif len(logits)==4:
+                #     out=Net3(logits)
+                # elif len(logits) == 3:
+                #     out=Net2(logits)
+
+                # elif len(logits) == 2:
+                #     out=Net1(logits)
+                
+                # elif len(logits) ==1:
+                #     out=logits[0]
+                Output_total.append(out[None,:])
+               
+            O=torch.concat(Output_total)
+            running_loss += criterion_cls(O,targets)
+            
+            _, predicts = torch.max(O, 1)
+            correct_num = torch.eq(predicts, targets).sum()
+            bingo_cnt += correct_num.cpu()
+            
+            y_true.append(targets.cpu().numpy())
+            y_pred.append(predicts.cpu().numpy())
+        if len(miss_face_label):
+           
+            O=torch.randn(size=(len(miss_face_label),3))
+            running_loss += criterion_cls(O,miss_face_label)
+
+            _, predicts = torch.max(O, 1)
+            correct_num = torch.eq(predicts, miss_face_label).sum()
+            bingo_cnt += correct_num.cpu()
+            
+            y_true.append(miss_face_label.cpu().numpy())
+            y_pred.append(predicts.cpu().numpy())
+
+    running_loss = running_loss/iter_cnt   
+    
+    
+
+    y_true = np.concatenate(y_true)
+    y_pred = np.concatenate(y_pred)
+
+    acc = bingo_cnt.float()/float(len(y_true))
+    acc = np.around(acc.numpy(),4)
+
+    balanced_acc = np.around(balanced_accuracy_score(y_true, y_pred),4)
+
+    tqdm.write("test accuracy:%.4f. bacc:%.4f. Loss:%.3f" % ( acc, balanced_acc, running_loss))
+    tqdm.write("best_acc:" + str(acc))
+
+
+
 
 if __name__ == "__main__":
-    # train_Dataset=MSCTD(mode='train',download=True,root_dir='.',transformer=transforms.Compose([]))
-    # val_Dataset=MSCTD(mode='validation',download=True,root_dir='.',transformer=transforms.Compose([]))
-    # test_Dataset=MSCTD(mode='test',download=True,root_dir='.',transformer=transforms.Compose([]))
-    # Models_path=os.listdir('checkpoints')
+   
     run_training()
     # path=os.path.join('checkpoints', "rafdb_epoch"+str(40)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
