@@ -4,7 +4,8 @@ import warnings
 from tqdm import tqdm
 import argparse
 from torchvision.transforms import ToTensor, Resize, Compose
-from libs.MSCTDdataset import MSCTD,FaceNetwrok_Dataset
+from libs.MSCTDdataset import MSCTD
+from libs.faceDataset import faceNetwrokDataset
 import numpy as np
 import torch
 import torch.nn as nn
@@ -20,17 +21,6 @@ from PIL import Image
 
 eps = sys.float_info.epsilon
 
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--MSCTD_path', type=str, default='datasets/raf-basic/', help='Raf-DB dataset path.')
-    parser.add_argument('--lr', type=float, default=0.1, help='Initial learning rate for sgd.')
-    parser.add_argument('--workers', default=4, type=int, help='Number of data loading workers.')
-    parser.add_argument('--batch_size', default=64, type=int, help='batch size')
-    parser.add_argument('--epochs', type=int, default=40, help='Total training epochs.')
-    parser.add_argument('--num_head', type=int, default=4, help='Number of attention head.')
-    parser.add_argument('--Model_path', type=str, default=4, help='set pretraind DAN Model Path')
-    return parser.parse_args()
 
 class AffinityLoss(nn.Module):
     def __init__(self, device, num_class=3, feat_dim=512):
@@ -107,13 +97,25 @@ def f_size(x):
   return (np.array(index_n[1::])-np.array(index)).tolist()
 
 #TODO augmentation
-def run_training(batch_size: int=64,
+def train(batch_size: int=64,
           MSCTD_path: str='.',
           num_head: int=4,
           workers: int=2,
           lr: float=0.1,
           epochs: int=40,
           augmentation: list=[]):
+    
+    """
+        Parameters:
+        ------------------------
+        `batch_size` : size of batch
+        `MSCTD_path` : MSCTD path ?????????????????
+        `num_head` : Number of attention head
+        `workers` : Number of data loading workers
+        `lr` : Initial learning rate for sgd
+        `epochs` : Total training epochs
+        `augmentation` : list of augmentation
+    """
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -123,7 +125,7 @@ def run_training(batch_size: int=64,
         torch.backends.cudnn.enabled = True
 
     model = DAN(num_head=num_head,num_class=3,pretrained=False)
-    # model.load_state_dict(torch.load(Model_path)['model_state_dict'])
+    # model.load_state_dict(torch.load(model_path)['model_state_dict'])
     model.requires_grad_(False)
     model.to(device)
 
@@ -151,7 +153,7 @@ def run_training(batch_size: int=64,
         ])
     
     # train_dataset = MSCTD(root_dir=MSCTD_path,mode='train',transformer=Compose([]),read_mode='single')
-    train_dataset = FaceNetwrok_Dataset(root_dir=MSCTD_path,mode='train',transformer=data_transforms)
+    train_dataset = faceNetwrokDataset(root_dir=MSCTD_path,mode='train',transformer=data_transforms)
 
     
     print('Whole train set size:', train_dataset.__len__())
@@ -171,7 +173,7 @@ def run_training(batch_size: int=64,
 
        
     # val_dataset = MSCTD(root_dir=MSCTD_path,mode='validation',transformer=Compose([]),read_mode='single')
-    val_dataset = FaceNetwrok_Dataset(root_dir=MSCTD_path,mode='validation',transformer=data_transforms_val)
+    val_dataset = faceNetwrokDataset(root_dir=MSCTD_path,mode='validation',transformer=data_transforms_val)
 
     print('Validation set size:', val_dataset.__len__())
    
@@ -184,7 +186,7 @@ def run_training(batch_size: int=64,
 
 
 
-    # test_dataset = FaceNetwrok_Dataset(FaceModel=faceDetector,root_dir=MSCTD_path,mode='test',transformer=data_transforms_val)
+    # test_dataset = faceNetwrokDataset(FaceModel=faceDetector,root_dir=MSCTD_path,mode='test',transformer=data_transforms_val)
 
     # print('Test set size:', test_dataset.__len__())
     
@@ -364,15 +366,27 @@ def run_training(batch_size: int=64,
                         os.path.join('checkpoints', "PipModel_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
             tqdm.write('Model saved.')
 
-
-
-def test():
-    args = parse_args()
+def test(batch_size: int=64,
+         model_path: str='.',
+         Facedataset_path: str='.',
+         num_head: int=4,
+         workers: int=2):
+    
+    """
+        Parameters:
+        ------------------------
+        `Facedataset_path` : Raf-DB dataset path ?????????????????
+        `num_head` : Number of attention head
+        `model_path` : path of model saved ????????????????????
+        `batch_size` : size of batch
+        `workers` : Number of data loading workers
+    """
+    
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    saved_model=torch.load(args.Model_path)
+    saved_model=torch.load(model_path)
 
-    model = DAN(num_head=args.num_head,num_class=3,pretrained=False)
+    model = DAN(num_head=num_head,num_class=3,pretrained=False)
     model.load_state_dict(saved_model['model_state_dict'])
     model.requires_grad_(False)
     model.to(device)
@@ -427,13 +441,13 @@ def test():
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
 
-    test_dataset = FaceNetwrok_Dataset(root_dir=args.FaceDataset_path,mode='test',transformer=data_transforms_val)
+    test_dataset = faceNetwrokDataset(root_dir=Facedataset_path ,mode='test',transformer=data_transforms_val)
 
     print('Test set size:', test_dataset.__len__())
     
     test_loader = torch.utils.data.DataLoader(test_dataset,
-                                            batch_size = args.batch_size,
-                                            num_workers = args.workers,
+                                            batch_size = batch_size,
+                                            num_workers = workers,
                                             collate_fn=collate_fn_test,
                                             shuffle = False,  
                                             pin_memory = True)
@@ -508,10 +522,7 @@ def test():
     tqdm.write("test accuracy:%.4f. bacc:%.4f. Loss:%.3f" % ( acc, balanced_acc, running_loss))
     tqdm.write("best_acc:" + str(acc))
 
-
-
-
 if __name__ == "__main__":
    
-    run_training()
+    train()
     # path=os.path.join('checkpoints', "rafdb_epoch"+str(40)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
