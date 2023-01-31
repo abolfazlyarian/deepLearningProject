@@ -9,9 +9,9 @@
         "alpha" : 1.0
     },
     "color_jit":{
-        "cut" : 500,
-        "T" : 0.05,
-        "max_freqs" : 20
+        "cut" : 100,
+        "T" : 0.01,
+        "max_freqs" : 200
     },
     "rand_filter":{
         "kernel_size": 3,

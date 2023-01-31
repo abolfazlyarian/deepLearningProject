@@ -1,8 +1,6 @@
 import os
 import sys
-import warnings
 from tqdm import tqdm
-import argparse
 from torchvision.transforms import ToTensor, Resize, Compose
 from libs.MSCTDdataset import MSCTD
 from libs.faceDataset import faceNetwrokDataset
@@ -16,6 +14,8 @@ from sklearn.metrics import balanced_accuracy_score
 from networks.dan import DAN
 from networks.MixFace import MixFaceMLP
 from PIL import Image
+from torch.utils.data import DataLoader
+
 
 
 
@@ -96,14 +96,13 @@ def f_size(x):
   index_n.append(len(x))
   return (np.array(index_n[1::])-np.array(index)).tolist()
 
-#TODO augmentation
-def train(batch_size: int=64,
+def train(model_path: str,
+          batch_size: int=64,
           MSCTD_path: str='.',
           num_head: int=4,
           workers: int=2,
           lr: float=0.1,
-          epochs: int=40,
-          augmentation: list=[]):
+          epochs: int=40):
     
     """
         Parameters:
@@ -114,7 +113,7 @@ def train(batch_size: int=64,
         `workers` : Number of data loading workers
         `lr` : Initial learning rate for sgd
         `epochs` : Total training epochs
-        `augmentation` : list of augmentation
+        `model_path` : path of model saved
     """
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -129,18 +128,18 @@ def train(batch_size: int=64,
     model.requires_grad_(False)
     model.to(device)
 
-    Net5=MixFaceMLP(dim=6)
-    Net4=MixFaceMLP(dim=5)
-    Net3=MixFaceMLP(dim=4)
-    Net2=MixFaceMLP(dim=3)
-    Net1=MixFaceMLP(dim=2)
+    # Net5=MixFaceMLP(dim=6)
+    # Net4=MixFaceMLP(dim=5)
+    # Net3=MixFaceMLP(dim=4)
+    # Net2=MixFaceMLP(dim=3)
+    # Net1=MixFaceMLP(dim=2)
     Net_Total=MixFaceMLP(dim=6)
     
-    Net1.to(device)
-    Net2.to(device)
-    Net3.to(device)
-    Net4.to(device)
-    Net5.to(device)
+    # Net1.to(device)
+    # Net2.to(device)
+    # Net3.to(device)
+    # Net4.to(device)
+    # Net5.to(device)
     Net_Total.to(device)
     # faceDetector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],allowed_modules=['detection'])
     # faceDetector.prepare(ctx_id=0)
@@ -158,12 +157,12 @@ def train(batch_size: int=64,
     
     print('Whole train set size:', train_dataset.__len__())
 
-    train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size = batch_size,
-                                               num_workers = workers,
-                                               shuffle = True,
-                                               collate_fn=collate_fn,  
-                                               pin_memory = True)
+    train_loader = DataLoader(train_dataset,
+                                batch_size = batch_size,
+                                num_workers = workers,
+                                shuffle = True,
+                                collate_fn=collate_fn,  
+                                pin_memory = True)
 
     data_transforms_val = transforms.Compose([
         transforms.ToTensor(),
@@ -178,11 +177,11 @@ def train(batch_size: int=64,
     print('Validation set size:', val_dataset.__len__())
    
       
-    val_loader = torch.utils.data.DataLoader(val_dataset,
-                                               batch_size = batch_size,
-                                               num_workers = workers,
-                                               shuffle = False,collate_fn= collate_fn, 
-                                               pin_memory = True)
+    val_loader = DataLoader(val_dataset,
+                            batch_size = batch_size,
+                            num_workers = workers,
+                            shuffle = False,collate_fn= collate_fn, 
+                            pin_memory = True)
 
 
 
@@ -190,18 +189,18 @@ def train(batch_size: int=64,
 
     # print('Test set size:', test_dataset.__len__())
     
-    # test_loader = torch.utils.data.DataLoader(test_dataset,
-    #                                            batch_size = 1,
-    #                                            num_workers = workers,
-    #                                            shuffle = False,  
-    #                                            pin_memory = True)
+    # test_loader = DataLoader(test_dataset,
+                                # batch_size = 1,
+                                # num_workers = workers,
+                                # shuffle = False,  
+                                # pin_memory = True)
 
     criterion_cls = torch.nn.CrossEntropyLoss()
     # criterion_af = AffinityLoss(device,num_class=3,feat_dim=512)
     # criterion_pt = PartitionLoss()
 
     # params = list(model.parameters()) + list(criterion_af.parameters())
-    params=list(Net1.parameters())+list(Net2.parameters())+list(Net3.parameters())+list(Net4.parameters())+list(Net5.parameters())
+    # params=list(Net1.parameters())+list(Net2.parameters())+list(Net3.parameters())+list(Net4.parameters())+list(Net5.parameters())
     params=Net_Total.parameters()
 
     # optimizer = torch.optim.SGD(params,lr=lr, weight_decay = 1e-4, momentum=0.9)
@@ -215,11 +214,11 @@ def train(batch_size: int=64,
         correct_sum = 0
         iter_cnt = 0
         
-        Net1.train()
-        Net2.train()
-        Net3.train()
-        Net4.train()
-        Net5.train()
+        # Net1.train()
+        # Net2.train()
+        # Net3.train()
+        # Net4.train()
+        # Net5.train()
         Net_Total.train()
         for img,targets,index in train_loader:
             
@@ -241,19 +240,19 @@ def train(batch_size: int=64,
                 # v,_=torch.mode(torch.argmax(logits,1))
                 # out = torch.zeros(size=(3,)).to(device)
                 # out[v] = 1.0
-
-                if len(logits)==6:
-                    out=Net5(logits)
-                elif len(logits)==5:
-                    out=Net4(logits)
-                elif len(logits)==4:
-                    out=Net3(logits)
-                elif len(logits) == 3:
-                    out=Net2(logits)
-                elif len(logits) == 2:
-                    out=Net1(logits)
-                elif len(logits) ==1:
-                    out=logits[0]
+                out = Net_Total(logits)
+                # if len(logits)==6:
+                #     out=Net5(logits)
+                # elif len(logits)==5:
+                #     out=Net4(logits)
+                # elif len(logits)==4:
+                #     out=Net3(logits)
+                # elif len(logits) == 3:
+                #     out=Net2(logits)
+                # elif len(logits) == 2:
+                #     out=Net1(logits)
+                # elif len(logits) ==1:
+                #     out=logits[0]
                 
                 # try:
                 # print(Output_total[0:1].shape)
@@ -288,11 +287,11 @@ def train(batch_size: int=64,
           y_true = []
           y_pred = []
 
-          Net1.eval()
-          Net2.eval()
-          Net3.eval()
-          Net4.eval()
-          Net5.eval()
+        #   Net1.eval()
+        #   Net2.eval()
+        #   Net3.eval()
+        #   Net4.eval()
+        #   Net5.eval()
           Net_Total.eval()
           
           for img,targets,index in val_loader:
@@ -311,22 +310,22 @@ def train(batch_size: int=64,
                     # out[v] = 1.0
 
 
+                    out = Net_Total(logits)
 
+                    # if len(logits)==6:
+                    #     out=Net5(logits)
+                    # elif len(logits)==5:
+                    #     out=Net4(logits)
+                    # elif len(logits)==4:
+                    #     out=Net3(logits)
+                    # elif len(logits) == 3:
+                    #     out=Net2(logits)
 
-                    if len(logits)==6:
-                        out=Net5(logits)
-                    elif len(logits)==5:
-                        out=Net4(logits)
-                    elif len(logits)==4:
-                        out=Net3(logits)
-                    elif len(logits) == 3:
-                        out=Net2(logits)
-
-                    elif len(logits) == 2:
-                        out=Net1(logits)
+                    # elif len(logits) == 2:
+                    #     out=Net1(logits)
                     
-                    elif len(logits) ==1:
-                        out=logits[0]
+                    # elif len(logits) ==1:
+                    #     out=logits[0]
                     Output_total.append(out[None,:])
                     sample_cnt += 1
 
@@ -354,20 +353,52 @@ def train(batch_size: int=64,
         tqdm.write("[Epoch %d] Validation accuracy:%.4f. bacc:%.4f. Loss:%.3f" % (epoch, acc, balanced_acc, running_loss))
         tqdm.write("best_acc:" + str(best_acc))
 
-        if acc > 0.38 and acc == best_acc:
-            torch.save({'iter': epoch,
-                        'model_state_dict': model.state_dict(),
-                        'Net_1':Net1.state_dict(),
-                        'Net_2':Net2.state_dict(),
-                        'Net_3':Net3.state_dict(),
-                        'Net_4':Net4.state_dict(),
-                        'Net_5':Net5.state_dict(),
-                            'optimizer_state_dict': optimizer.state_dict(),},
-                        os.path.join('checkpoints', "PipModel_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
-            tqdm.write('Model saved.')
+        if not os.path.exists(model_path):
+            os.mkdir(model_path)
 
-def test(batch_size: int=64,
-         model_path: str='.',
+        if acc > 0.30 and acc == best_acc:
+            torch.save({'iter': epoch,
+                        # 'model_state_dict': model.state_dict(),
+                        'Net_Total':Net_Total.state_dict(),
+                        # 'Net_1':Net1.state_dict(),
+                        # 'Net_2':Net2.state_dict(),
+                        # 'Net_3':Net3.state_dict(),
+                        # 'Net_4':Net4.state_dict(),
+                        # 'Net_5':Net5.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict(),},
+                        os.path.join(model_path,"facePipModel.pth"))
+            
+            path_save = os.path.join(model_path,"facePipModel.pth")
+            tqdm.write(f"Model saved in : {path_save}")
+
+
+def collate_fn_test(x):
+      labels=[]
+      data=[]
+      index=[]
+      miss_face_label=[]
+      for i in x:
+        if   len(i[1]) != 0 and len(i[2]) != 0 and len(i[0]) != 0 :
+          # print(len(i[0]),len(i[1]),len(i[2]))
+          data.append(i[0])
+          labels.append(i[1])
+          index.append(i[2])
+        else :
+          miss_face_label.append(i[1])
+    
+          
+
+      if len(labels) and len(miss_face_label):
+        return torch.concat(data),torch.concat(labels),torch.concat(index),torch.concat(miss_face_label)
+      elif len(miss_face_label)==0:
+        return torch.concat(data),torch.concat(labels),torch.concat(index),torch.tensor([])
+      else:
+        return #torch.tensor([]),torch.tensor([]),torch.tensor([])
+    
+
+def test(DAN_path: str,
+         mixFace_path: str,
+         batch_size: int=64,
          Facedataset_path: str='.',
          num_head: int=4,
          workers: int=2):
@@ -377,21 +408,24 @@ def test(batch_size: int=64,
         ------------------------
         `Facedataset_path` : Raf-DB dataset path ?????????????????
         `num_head` : Number of attention head
-        `model_path` : path of model saved ????????????????????
+        `DAN_path` : path of Dan model saved
+        `mixFace_path` : path of mixface model saved
         `batch_size` : size of batch
         `workers` : Number of data loading workers
     """
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    saved_model=torch.load(model_path)
+    DAN_model=torch.load(DAN_path)
 
     model = DAN(num_head=num_head,num_class=3,pretrained=False)
-    model.load_state_dict(saved_model['model_state_dict'])
+    model.load_state_dict(DAN_model['model_state_dict'])
     model.requires_grad_(False)
     model.to(device)
 
+    mixface_model=torch.load(mixFace_path)
     Net_Total=MixFaceMLP(dim=6)
+    Net_Total.load_state_dict(mixface_model['Net_Total'])
     Net_Total.to(device)
     # Net5=MixFaceMLP(dim=6)
     # Net5.load_state_dict(saved_model['Net_5'])
@@ -415,25 +449,7 @@ def test(batch_size: int=64,
     # Net3.to(device)
     # Net4.to(device)
     # Net5.to(device)
-    def collate_fn_test(x):
-      labels=[]
-      data=[]
-      index=[]
-      miss_face_label=[]
-      for i in x:
-        if   len(i[1]) != 0 and len(i[2]) != 0 and len(i[0]) != 0 :
-          # print(len(i[0]),len(i[1]),len(i[2]))
-          data.append(i[0])
-          labels.append(i[1])
-          index.append(i[2])
-        else :
-          miss_face_label.append(i[1])
-          
-
-      if len(labels):
-        return torch.concat(data),torch.concat(labels),torch.concat(index),torch.concat(miss_face_label)
-      else:
-        return #torch.tensor([]),torch.tensor([]),torch.tensor([])
+    
     
     data_transforms_val = transforms.Compose([
         transforms.ToTensor(),
@@ -445,12 +461,12 @@ def test(batch_size: int=64,
 
     print('Test set size:', test_dataset.__len__())
     
-    test_loader = torch.utils.data.DataLoader(test_dataset,
-                                            batch_size = batch_size,
-                                            num_workers = workers,
-                                            collate_fn=collate_fn_test,
-                                            shuffle = False,  
-                                            pin_memory = True)
+    test_loader = DataLoader(test_dataset,
+                            batch_size = batch_size,
+                            num_workers = workers,
+                            collate_fn=collate_fn_test,
+                            shuffle = False,  
+                            pin_memory = True)
 
     criterion_cls = torch.nn.CrossEntropyLoss()
     y_true=[]
@@ -522,7 +538,3 @@ def test(batch_size: int=64,
     tqdm.write("test accuracy:%.4f. bacc:%.4f. Loss:%.3f" % ( acc, balanced_acc, running_loss))
     tqdm.write("best_acc:" + str(acc))
 
-if __name__ == "__main__":
-   
-    train()
-    # path=os.path.join('checkpoints', "rafdb_epoch"+str(40)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))

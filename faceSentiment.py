@@ -59,7 +59,8 @@ class PartitionLoss(nn.Module):
             
         return loss
 
-def train(batch_size: int=64,
+def train(model_path: str, 
+          batch_size: int=64,
           Facedataset_path: str='.',
           num_head: int=4,
           workers: int=2,
@@ -71,12 +72,13 @@ def train(batch_size: int=64,
         Parameters:
         ------------------------
         `batch_size` : size of batch
-        `Facedataset_path` : Raf-DB dataset path ?????????????????
+        `Facedataset_path` : face dataset path 
         `num_head` : Number of attention head
         `workers` : Number of data loading workers
         `lr` : Initial learning rate for sgd
         `epochs` : Total training epochs
         `augmentation` : list of augmentation
+        `model_path` : path of model saved
     """
     
     if torch.cuda.is_available():
@@ -101,7 +103,7 @@ def train(batch_size: int=64,
         transforms.RandomErasing(scale=(0.02,0.25)),
         ])
     
-    train_dataset = faceDataset(root_dir=Facedataset_path,mode='train',transformer=data_transforms)
+    train_dataset = faceDataset(root_dir=Facedataset_path,augmentation=augmentation, mode='train',transformer=data_transforms)
     
     print('Whole train set size:', train_dataset.__len__())
 
@@ -118,7 +120,7 @@ def train(batch_size: int=64,
                                  std=[0.229, 0.224, 0.225])])   
 
        
-    val_dataset = faceDataset(root_dir=Facedataset_path,augmentation=augmentation, mode='validation',transformer=data_transforms_val)
+    val_dataset = faceDataset(root_dir=Facedataset_path,augmentation=[], mode='validation',transformer=data_transforms_val)
 
     print('Validation set size:', val_dataset.__len__())
     
@@ -220,28 +222,45 @@ def train(batch_size: int=64,
             tqdm.write("[Epoch %d] Validation accuracy:%.4f. bacc:%.4f. Loss:%.3f" % (epoch, acc, balanced_acc, running_loss))
             tqdm.write("best_acc:" + str(best_acc))
 
-            if acc > 0.38 and acc == best_acc:
-                torch.save({'iter': epoch,
-                            'model_state_dict': model.state_dict(),
-                             'optimizer_state_dict': optimizer.state_dict(),},
-                            os.path.join('checkpoints', "rafdb_epoch"+str(epoch)+"_acc"+str(acc)+"_bacc"+str(balanced_acc)+".pth"))
-                tqdm.write('Model saved.')
+            if not os.path.exists(model_path):
+                os.mkdir(model_path)
 
-#TODO ????????????
-def test(batch_size: int=64,
-         model_path: str='.',
+            if acc > 0.30 and acc == best_acc:
+                if len(augmentation):
+                    torch.save({'iter': epoch,
+                                'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),},
+                                os.path.join(model_path,"faceDAN_aug.pth"))
+                    
+                    path_save = os.path.join(model_path,"faceDAN_aug.pth")
+                    tqdm.write(f"Model saved in : {path_save}")
+                
+                else:
+                    torch.save({'iter': epoch,
+                                'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),},
+                                os.path.join(model_path,"faceDAN.pth"))
+                    
+                    path_save = os.path.join(model_path,"faceDAN.pth")
+                    tqdm.write(f"Model saved in : {path_save}")
+    
+
+def test(model_path: str,
+         batch_size: int=64,
          Facedataset_path: str='.',
          num_head: int=4,
-         workers: int=2):
+         workers: int=2,
+         augmentation=[]):
     
     """
         Parameters:
         ------------------------
-        `Facedataset_path` : Raf-DB dataset path ?????????????????
+        `Facedataset_path` : face dataset path 
         `num_head` : Number of attention head
-        `model_path` : path of model saved ????????????????????
+        `model_path` : path of model saved
         `batch_size` : size of batch
         `workers` : Number of data loading workers
+        `augmentation` : list of augmentation
     """
     data_transforms_test = transforms.Compose([
     transforms.ToTensor(),
@@ -249,10 +268,17 @@ def test(batch_size: int=64,
     transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])]) 
 
-    test_dataset = faceDataset(root_dir=Facedataset_path,
-                               augmentation=[],
-                               mode='test',
-                               transformer=data_transforms_test)
+    if len(augmentation):
+        test_dataset = faceDataset(root_dir=Facedataset_path,
+                                augmentation=augmentation,
+                                mode='train',
+                                transformer=data_transforms_test,just_aug=True)
+    else:
+        test_dataset = faceDataset(root_dir=Facedataset_path,
+                                augmentation=[],
+                                mode='test',
+                                transformer=data_transforms_test)
+    
     print('Test set size:', test_dataset.__len__())
     test_loader = torch.utils.data.DataLoader(test_dataset,
                                                batch_size = batch_size,

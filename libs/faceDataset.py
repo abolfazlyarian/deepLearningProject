@@ -10,22 +10,23 @@ from libs.MSCTDdataset import MSCTD
 
 
 class faceDataset(data.Dataset):
-    def __init__(self, mode, root_dir=".", transformer=transforms.Compose([]), augmentation=["diffeo","filt","color"]) -> None:
+    def __init__(self, mode, root_dir=".", transformer=transforms.Compose([]), augmentation=["diffeo","filt","color"], just_aug=False) -> None:
         super().__init__()
         self.transformer=transformer
         self.aug = augmentation
         
-        if not os.path.exists(os.path.join(root_dir,"faceDataset","orginalFace",mode)):
-            raise Exception("orginalFace Not found!")
+        if not os.path.exists(os.path.join(root_dir,"faceDataset","originalFace",mode)):
+            raise Exception("originalFace Not found!")
         else:
             if len(augmentation) and mode=='train':
                 if not os.path.exists(os.path.join(root_dir,"faceDataset","augmentationFace",mode)):
                     raise Exception("augmentationFace Not found!") 
                 else:
-        
                     self.img_list = []
-                    self.img_list = sorted(np.array(glob.glob(os.path.join(root_dir,"faceDataset","orginalFace",mode, '*.jpg'))).tolist())
                     self.sentiment = read_sentiment_text(root_dir+"/Datasets/"+"sentiment_"+mode+".txt")
+                    
+                    if just_aug == False:
+                        self.img_list = sorted(np.array(glob.glob(os.path.join(root_dir,"faceDataset","originalFace",mode, '*.jpg'))).tolist())
 
                     for i in augmentation:
                         if i == 'diffeo':
@@ -38,7 +39,7 @@ class faceDataset(data.Dataset):
                             raise Exception("augmentation is wrong. augmentation = ['diffeo', 'color', 'filt']")
                     
             else:
-                self.img_list = sorted(np.array(glob.glob(os.path.join(root_dir,"faceDataset","orginalFace",mode, '*.jpg'))).tolist())
+                self.img_list = sorted(np.array(glob.glob(os.path.join(root_dir,"faceDataset","originalFace",mode, '*.jpg'))).tolist())
                 self.sentiment = read_sentiment_text(root_dir+"/Datasets/"+"sentiment_"+mode+".txt")
 
     def __getitem__(self, index):
@@ -62,7 +63,7 @@ class faceNetwrokDataset(data.Dataset):
         super(faceNetwrokDataset,self).__init__()
         
         self.transformer=transformer
-        self.facePath=os.path.join(root_dir,'FaceDataset','faceImage',mode) 
+        self.facePath=os.path.join(root_dir,'faceDataset','originalFace',mode) 
         self.main_Dataset=MSCTD(mode=mode,download=False,root_dir=root_dir,transformer=transforms.Compose([]),read_mode='single')
     
     def __getitem__(self, index):

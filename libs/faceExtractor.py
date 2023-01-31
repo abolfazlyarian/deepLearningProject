@@ -15,7 +15,7 @@ class faceExtractor():
                  rootDir=".",
                  max_num=1,
                  transform_input=transforms.Compose([transforms.ToPILImage()]),
-                 transform_orginal=transforms.Compose([]),
+                 transform_original=transforms.Compose([]),
                  transform_aug=transforms.Compose([transforms.PILToTensor(),transforms.Resize((224,224))]),
                  augmentation=False) -> None:
         
@@ -24,10 +24,10 @@ class faceExtractor():
 
         if not os.path.exists(f"{self.root}/faceDataset"):
           os.mkdir(f"{self.root}/faceDataset")
-        if not os.path.exists(f"{self.root}/faceDataset/orginalFace"):
-          os.mkdir(f"{self.root}/faceDataset/orginalFace")
-        if not os.path.exists(f"{self.root}/faceDataset/orginalFace/"+mode):
-          os.mkdir(f"{self.root}/faceDataset/orginalFace/"+mode)
+        if not os.path.exists(f"{self.root}/faceDataset/originalFace"):
+          os.mkdir(f"{self.root}/faceDataset/originalFace")
+        if not os.path.exists(f"{self.root}/faceDataset/originalFace/"+mode):
+          os.mkdir(f"{self.root}/faceDataset/originalFace/"+mode)
         
         if augmentation and not os.path.exists(f"{self.root}/faceDataset/augmentationFace"):
            os.mkdir(f"{self.root}/faceDataset/augmentationFace")
@@ -40,7 +40,7 @@ class faceExtractor():
         self.max_len=0
         self.app = FaceAnalysis(providers=['CUDAExecutionProvider'],allowed_modules=['detection']) # , 'CPUExecutionProvider'
         self.tf_input = transform_input
-        self.tf_orginal = transform_orginal
+        self.tf_original = transform_original
         self.tf_aug =transform_aug
         self.aug=augmentation
         self.max_num = max_num
@@ -65,9 +65,9 @@ class faceExtractor():
                                 sigma=par_rand["sigma"], stochastic=True)
 
     def run(self,Dataset):
-        self.app.prepare(ctx_id=0,det_size=(Dataset[0][0][0].size(1),Dataset[0][0][0].size(2)))
+        self.app.prepare(ctx_id=0)#det_size=(Dataset[0][0][0].size(1),Dataset[0][0][0].size(2))
         for img_tensor,_,sentiment,idx in tqdm(Dataset):
-            img = np.asarray(self.tf_input(img_tensor[0]/255))
+            img = img_tensor[0]#np.asarray(self.tf_input(img_tensor[0]))
             faces = self.app.get(img)
             img_PIL=Image.fromarray(img.astype(np.uint8))
             face_count=len(faces)
@@ -87,9 +87,14 @@ class faceExtractor():
                 a = face_count
 
               for i,f in zip(range(a),faces):
+                  try: 
+                    cons = np.linalg.norm(f['bbox'][0:2] - f['bbox'][2:4])//10
+                    f['bbox'] += np.array([-cons,-cons,cons,cons])
+                  except:
+                     pass
                   face=img_PIL.crop(f['bbox'])
-                  face_tf_org = self.tf_orginal(face)
-                  face_tf_org.save(f"{self.root}/faceDataset/orginalFace/{self.mode}/"+f'{idx}_{i}.jpg')
+                  face_tf_org = self.tf_original(face)
+                  face_tf_org.save(f"{self.root}/faceDataset/originalFace/{self.mode}/"+f'{idx}_{i}.jpg')
                   if self.aug:
                     tensor2PIL = transforms.ToPILImage()
                     face_tf = self.tf_aug(face)/255
