@@ -79,14 +79,14 @@ class faceExtractor():
         for img_tensor,_,sentiment,idx in tqdm(Dataset):
             img = img_tensor[0]#np.asarray(self.tf_input(img_tensor[0]))
             faces = self.app.get(img)
-            img_PIL=Image.fromarray(img.astype(np.uint8))
-            face_count=len(faces)
+            img_PIL = Image.fromarray(img.astype(np.uint8))
+            face_count = len(faces)
 
             if face_count > self.max_len:
-              self.max_len = face_count
+                self.max_len = face_count
 
             if face_count == 0:
-                self.fault+=1
+                self.fault += 1
                 self.idx_fault.append(idx)
 
             else:

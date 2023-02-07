@@ -7,7 +7,7 @@ import torch.nn as nn
 from torchvision import transforms
 from libs.faceDataset import faceDataset
 from sklearn.metrics import balanced_accuracy_score
-from networks.dan import DAN
+from faceAnalysis.networks.dan import DAN
 
 
 eps = sys.float_info.epsilon

@@ -11,8 +11,8 @@ import torch.utils.data as data
 from torchvision import transforms
 from sklearn.metrics import balanced_accuracy_score
 
-from networks.dan import DAN
-from networks.MixFace import MixFaceMLP
+from faceAnalysis.networks.dan import DAN
+from faceAnalysis.networks.MixFace import MixFaceMLP
 from PIL import Image
 from torch.utils.data import DataLoader
 
@@ -102,7 +102,8 @@ def train(model_path: str,
           num_head: int=4,
           workers: int=2,
           lr: float=0.1,
-          epochs: int=40):
+          epochs: int=40,
+          max_num: int=6):
     
     """
         Parameters:
@@ -133,7 +134,7 @@ def train(model_path: str,
     # Net3=MixFaceMLP(dim=4)
     # Net2=MixFaceMLP(dim=3)
     # Net1=MixFaceMLP(dim=2)
-    Net_Total=MixFaceMLP(dim=6)
+    Net_Total=MixFaceMLP(dim=max_num)
     
     # Net1.to(device)
     # Net2.to(device)
@@ -358,7 +359,7 @@ def train(model_path: str,
 
         if acc > 0.30 and acc == best_acc:
             torch.save({'iter': epoch,
-                        # 'model_state_dict': model.state_dict(),
+                        'model_state_dict': model.state_dict(),
                         'Net_Total':Net_Total.state_dict(),
                         # 'Net_1':Net1.state_dict(),
                         # 'Net_2':Net2.state_dict(),
