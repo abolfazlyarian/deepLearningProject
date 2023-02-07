@@ -19,26 +19,36 @@ class faceExtractor():
                  transform_aug=transforms.Compose([transforms.PILToTensor(),transforms.Resize((224,224))]),
                  augmentation=False) -> None:
         
+        """
+          Parameters:
+          ----------------------------
+          `mode` : specifies `train` , `validation` or `test` dataset
+          `root_dir` : face saving path
+          `max_num` : find maximum number of face in each image
+          `augmentation` : data augmentation ['diffeo', 'color', 'filt']
+          `transform` : apply transforms
+        """
+        
         self.root=rootDir
         self.mode=mode
-
-        if not os.path.exists(f"{self.root}/faceDataset"):
-          os.mkdir(f"{self.root}/faceDataset")
-        if not os.path.exists(f"{self.root}/faceDataset/originalFace"):
-          os.mkdir(f"{self.root}/faceDataset/originalFace")
-        if not os.path.exists(f"{self.root}/faceDataset/originalFace/"+mode):
-          os.mkdir(f"{self.root}/faceDataset/originalFace/"+mode)
         
-        if augmentation and not os.path.exists(f"{self.root}/faceDataset/augmentationFace"):
-           os.mkdir(f"{self.root}/faceDataset/augmentationFace")
-        if augmentation and not os.path.exists(f"{self.root}/faceDataset/augmentationFace/"+mode):
-          os.mkdir(f"{self.root}/faceDataset/augmentationFace/"+mode)
+        if not os.path.exists(os.path.join(self.root, "faceDataset")):
+          os.mkdir(os.path.join(self.root, "faceDataset"))
+        if not os.path.exists(os.path.join(self.root, "faceDataset","originalFace")):
+          os.mkdir(os.path.join(self.root, "faceDataset","originalFace"))
+        if not os.path.exists(os.path.join(self.root, "faceDataset","originalFace",mode)):
+          os.mkdir(os.path.join(self.root, "faceDataset","originalFace",mode))
+        
+        if augmentation and not os.path.exists(os.path.join(self.root, "faceDataset","augmentationFace")):
+          os.mkdir(os.path.join(self.root, "faceDataset","augmentationFace"))
+        if augmentation and not os.path.exists(os.path.join(self.root, "faceDataset","augmentationFace", mode)):
+          os.mkdir(os.path.join(self.root, "faceDataset","augmentationFace", mode))
 
         
         self.fault=0
         self.idx_fault=[]
         self.max_len=0
-        self.app = FaceAnalysis(providers=['CUDAExecutionProvider'],allowed_modules=['detection']) # , 'CPUExecutionProvider'
+        self.app = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],allowed_modules=['detection'])
         self.tf_input = transform_input
         self.tf_original = transform_original
         self.tf_aug =transform_aug
