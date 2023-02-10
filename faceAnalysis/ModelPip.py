@@ -17,8 +17,6 @@ from PIL import Image
 from torch.utils.data import DataLoader
 
 
-
-
 eps = sys.float_info.epsilon
 
 
@@ -538,6 +536,6 @@ def test(DAN_path: str,
 
     tqdm.write("test accuracy:%.4f. bacc:%.4f. Loss:%.3f" % ( acc, balanced_acc, running_loss))
     tqdm.write("best_acc:" + str(acc))
-    
+
     return y_true, y_pred
 

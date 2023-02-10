@@ -14,3 +14,4 @@ class MixFaceMLP(nn.Module):
     def forward(self,x):
 
         return self.model(F.pad(x,(0,0,0,self.dim-len(x)),"constant", 0))
+    

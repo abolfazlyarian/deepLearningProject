@@ -2,3 +2,4 @@ Datasets
 faceDataset
 README.md
 checkpoints
+.vector_cache
