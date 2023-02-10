@@ -20,12 +20,15 @@ class faceExtractor():
                  augmentation=False) -> None:
         
         """
+          Extracting faces from images and saving them.
+          In addition, it could apply all augmentor functions (diffeo, color, rand_filter) to faces and save them in a different directory
+
           Parameters:
           ----------------------------
           `mode` : specifies `train` , `validation` or `test` dataset
           `root_dir` : face saving path
           `max_num` : find maximum number of face in each image
-          `augmentation` : data augmentation ['diffeo', 'color', 'filt']
+          `augmentation` : apply augmentor function or not
           `transform` : apply transforms
         """
         
@@ -67,10 +70,14 @@ class faceExtractor():
                             scut=par_diffeo["scut"], rcut=par_diffeo["rcut"],
                             cutmin=par_diffeo["cutmin"], cutmax=par_diffeo["cutmax"],
                             alpha=par_diffeo["alpha"], stochastic=True)
-
+            
+            # cut : Frequency range
+            # T : Color change strength
             self.color = RandomSmoothColor(cut=par_color["cut"], T=par_color["T"],
                                       freq_bandwidth=par_color["max_freqs"], stochastic=True)
 
+            # kernel_size : size of filter
+            # sigma : filter strength
             self.filt = RandomFilter(kernel_size=par_rand["kernel_size"],
                                 sigma=par_rand["sigma"], stochastic=True)
 
@@ -115,7 +122,10 @@ class faceExtractor():
                     aug_color = self.color(face_tf)
                     tensor2PIL(aug_color).save(f"{self.root}/faceDataset/augmentationFace/{self.mode}/"+f'{idx}_{i}_1.jpg')
                     # filter augmentation
-                    aug_filt = self.filt(face_tf)
+                    while True:
+                      aug_filt = self.filt(face_tf)
+                      if aug_filt.mean() > 0.02:
+                         break
                     tensor2PIL(aug_filt).save(f"{self.root}/faceDataset/augmentationFace/{self.mode}/"+f'{idx}_{i}_2.jpg')
 
                      

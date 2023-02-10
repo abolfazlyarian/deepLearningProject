@@ -327,5 +327,6 @@ def test(model_path: str,
         balanced_acc = np.around(balanced_accuracy_score(y_true, y_pred),4)
 
         print("test accuracy:%.4f. bacc:%.4f" % (acc, balanced_acc))
+        return y_true, y_pred
        
 

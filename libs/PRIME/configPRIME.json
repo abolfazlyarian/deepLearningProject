@@ -9,12 +9,12 @@
         "alpha" : 1.0
     },
     "color_jit":{
-        "cut" : 100,
-        "T" : 0.01,
+        "cut" : 20,
+        "T" : 0.001,
         "max_freqs" : 200
     },
     "rand_filter":{
         "kernel_size": 3,
-        "sigma": 4
+        "sigma": 0.5
     }
 }

@@ -11,6 +11,17 @@ from libs.MSCTDdataset import MSCTD
 
 class faceDataset(data.Dataset):
     def __init__(self, mode, root_dir=".", transformer=transforms.Compose([]), augmentation=["diffeo","filt","color"], just_aug=False) -> None:
+        """
+            face dataset with original face and their augmentation
+
+            Parameters:
+            ------------------------
+            `mode` : specifies `train` , `validation` or `test` dataset
+            `root_dir` : is the path where the `train/validation/test` data is stored. they should be in ./Datasets/ directory. e.g. for train dataset, you should place train.zip in root_dir/Datasets/
+            `transformer` : dataset transformation\\
+            `augmentation` : which data augmentation ['diffeo', 'color', 'filt']
+            `just_aug` : using augmentation or not 
+        """
         super().__init__()
         self.transformer=transformer
         self.aug = augmentation
