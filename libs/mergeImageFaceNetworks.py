@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 
 class mergeImageFaceNetwork():
-    def __init__(self, max_num: int=1, modelPath_face: str='checkpoints/imageResNet50.pth',
-                  modelPath_image: str='checkpoints/facePipModel.pth', num_head: int=4) -> None:
+    def __init__(self, max_num: int=1, modelPath_face: str='checkpoints/facePipModel.pth',
+                  modelPath_image: str='checkpoints/imageResNet50.pth', num_head: int=4) -> None:
         """
             combine face and image netwoek
 
@@ -51,7 +51,6 @@ class mergeImageFaceNetwork():
         self.Net_Total.load_state_dict(pip_model['Net_Total'])
         self.Net_Total.requires_grad_(False)
         self.Net_Total.to(self.device)
-        
 
         model_image = torch.load(modelPath_image)
         self.resnet_model = resnet50(weights=ResNet50_Weights.DEFAULT)

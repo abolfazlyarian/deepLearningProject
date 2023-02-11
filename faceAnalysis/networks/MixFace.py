@@ -12,6 +12,5 @@ class MixFaceMLP(nn.Module):
             ,('Linear_2',nn.Linear(10,3))])))
         self.dim=dim
     def forward(self,x):
-
         return self.model(F.pad(x,(0,0,0,self.dim-len(x)),"constant", 0))
     

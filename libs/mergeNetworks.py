@@ -36,7 +36,7 @@ class mergeNetwork():
         self.dan_model.requires_grad_(False)
         self.dan_model.to(self.device)
 
-        self.Net_Total = MixFaceMLP(dim=6)
+        self.Net_Total = MixFaceMLP(dim=max_num)
         self.Net_Total.load_state_dict(pip_model['Net_Total'])
         self.Net_Total.requires_grad_(False)
         self.Net_Total.to(self.device)
@@ -47,7 +47,7 @@ class mergeNetwork():
         #     ('MixFaceMLP', Net_Total)
         # ]))
 
-        # model_image = torch.load(modelPath_image)
+        model_image = torch.load(modelPath_image)
         self.resnet_model = resnet50(weights=ResNet50_Weights.DEFAULT)
         fc_head = nn.Sequential(
             nn.Linear(2048, 256),nn.ReLU(),nn.Dropout(0.5),
@@ -56,7 +56,7 @@ class mergeNetwork():
             nn.Linear(16, 3),
         )
         self.resnet_model.fc = fc_head
-        # self.resnet_model.load_state_dict(model_image)
+        self.resnet_model.load_state_dict(model_image)
         self.resnet_model.requires_grad_(False)
         self.resnet_model.to(self.device)
         self.app.prepare(ctx_id=0)
@@ -133,7 +133,7 @@ class mergeNetwork():
 
 
     def test(self, dataset_test):
-        # testloader = DataLoader(dataset_test, shuffle=True, batch_size=1, pin_memory=True, num_workers=2)
+
         tf_face = self.face_transformer
         avgCorrect = 0
         
@@ -169,8 +169,8 @@ if __name__ == "__main__":
             download=False,
             root_dir=root_dir,
             read_mode="single")
-    mn = mergeNetwork(modelPath_face='checkpoints/facePipModel.pth')
-    mn.train(train_data,1)
+    mn = mergeNetwork(modelPath_image='../checkpoints/imageResNet50.pth',modelPath_face='../checkpoints/facePipModel.pth')
+    # mn.train(train_data,1)
     print(mn.test(test_data))
 
  
