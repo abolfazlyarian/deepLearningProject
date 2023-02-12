@@ -59,7 +59,7 @@ rootDir = '/content/drive/MyDrive/deepLearningProject/*'
 
 !pip install --upgrade --no-cache-dir gdown 
 ```       
-### How Run Phase3_1_2
+### How to Run Phase3_1_2
 in this section we use Google colab to train transfomer network and we prepare a notebook for all part of in phase 3-1-2
 to run it correctly first copy Transformer file in your googel drive then open phase3-1-2.ipynb in colab second move our dataset to your google drive (dont put it in any floder)  these step is enough for training.but for testing model one step is remain move out pretrained model in transformer/snap in your google drive.
 
