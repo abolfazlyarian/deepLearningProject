@@ -1,5 +1,5 @@
 <h1 align="center">Deep Learning 2022 - Project </h1>
-<h3 align="center">student contributors : Abolfazl Yarian - Mehran Morabbi Pazoki - Farhmand Alizadeh </h3>
+<h3 align="center">student contributors : Abolfazl Yarian - Mehran Morabbi Pazoki - Farahmand Alizadeh </h3>
 
 Structure of Project is as follow 
 ```
