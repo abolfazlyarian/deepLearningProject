@@ -1,7 +1,7 @@
 <h1 align="center">Deep Learning 2022 - Project </h1>
-<h3 align="center">student contributors : Abolfazl Yarian - Mehran Morabbi Pazoki - Farahmand Alizadeh </h3>
+<h3 align="center"> Student contributors: Abolfazl Yarian - Mehran Morabbi Pazoki - Farahmand Alizadeh </h3>
 
-Structure of Project is as follow 
+The structure of the Project is as follows 
 ```
 deepLearningProject
 ├── Datasets
@@ -29,15 +29,15 @@ deepLearningProject
 │   └── transforms.py           ----> transforms include some functions and compose class for adding augmentations and other changes in data
 |
 |
-├── phase0.ipynb                                ----> main code for phase 0 of project is present here
+├── phase0.ipynb                                ----> main code for phase 0 of the project is present here
 ├── README.md
 ├── test_face_count_dict_mtcnn.pkl              -----> face count dictionary for test images 
 ├── train_face_count_dict_mtcnn.pkl             -----> face count dictionary for train images 
 └── validation_face_count_dict_mtcnn.pkl        -----> face count dictionary for validation images 
 ```       
 Our Notebook needs All of the files to be in one directory and the path of Datasets should be set in `root_dir` as input of the Dataset class.
-if a full Dataset exists please insert the path of Datasets as explained beforehand otherwise you can download it easily by our code as you make Dataset instance and set `download=true` in MSTCD class argument.
-for example if you want to load training dataset manually, you set `root_dir="trainrootpath"` and `download=False` in loading dataset with MSTCD class
+if a full Dataset exists please insert the path of Datasets as explained beforehand otherwise you can download it easily by our code as you make a Dataset instance and set `download=true` in the MSTCD class argument.
+for example, if you want to load the training dataset manually, you set `root_dir="trainrootpath"` and `download=False` in loading the dataset with MSTCD class
 ```
 trainrootpath
 ├── Datasets
@@ -60,8 +60,7 @@ rootDir = '/content/drive/MyDrive/deepLearningProject/*'
 !pip install --upgrade --no-cache-dir gdown 
 ```       
 ### How to Run Phase3_1_2
-in this section we use Google colab to train transfomer network and we prepare a notebook for all part of in phase 3-1-2
-to run it correctly first copy Transformer file in your googel drive then open phase3-1-2.ipynb in colab second move our dataset to your google drive (dont put it in any floder)  these step is enough for training.but for testing model one step is remain move out pretrained model in transformer/snap in your google drive.
+in this section, we use Google Colab to train the transformer network and we prepare a notebook for all parts of phase 3-1-2 to run it correctly first, copy the Transformer file in your google drive then open phase3-1-2.ipynb in Colab second move our dataset to your google drive (don't put it in any folder)  this step is enough for training. but for testing the model one step remains to move out the pre-trained model in the transformer/snap in your google drive.
 
 ```
 Dataset = https://drive.google.com/file/d/1qGVdcPBOznaprIpS_SUHI0SEQTEWLFyf/view?usp=sharing
